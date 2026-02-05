@@ -27,6 +27,7 @@ namespace TUA.Systems
         #region Fields
         private readonly HashSet<IWeaponUser> _registeredWeaponUsers = new();
         #endregion
+        
         #region Unity Callbacks
         protected override void OnEnable()
         {
@@ -34,6 +35,7 @@ namespace TUA.Systems
             GameWorld.OnEntitySpawnEvent += _OnEntitySpawn;
             GameWorld.OnEntityDespawnEvent += _OnEntityDespawn;
         }
+        
         protected override void OnDisable()
         {
             base.OnDisable();
@@ -50,6 +52,7 @@ namespace TUA.Systems
             _registeredWeaponUsers.Clear();
         }
         #endregion
+       
         #region Methods
         private void _OnEntitySpawn(Entity entity)
         {
@@ -58,56 +61,54 @@ namespace TUA.Systems
                 _RegisterWeaponUser(weaponUser);
             }
         }
+        
         private void _OnEntityDespawn(Entity entity)
         {
             if (entity is IWeaponUser weaponUser)
-            {
                 _UnregisterWeaponUser(weaponUser);
-            }
         }
+        
         private void _RegisterWeaponUser(IWeaponUser weaponUser)
         {
             if (weaponUser == null || _registeredWeaponUsers.Contains(weaponUser))
                 return;
+            
             _registeredWeaponUsers.Add(weaponUser);
             weaponUser.OnRequestToShootEvent += _OnRequestToShoot;
             weaponUser.OnRequestToReloadEvent += _OnRequestToReload;
         }
+        
         private void _UnregisterWeaponUser(IWeaponUser weaponUser)
         {
             if (weaponUser == null || !_registeredWeaponUsers.Contains(weaponUser))
                 return;
+            
             _registeredWeaponUsers.Remove(weaponUser);
             weaponUser.OnRequestToShootEvent -= _OnRequestToShoot;
             weaponUser.OnRequestToReloadEvent -= _OnRequestToReload;
         }
+        
         private void _OnRequestToShoot(IWeaponUser weaponUser, Vector3 origin, Vector3 direction)
         {
             if (weaponUser == null)
                 return;
             if (weaponUser.IsServerSide)
-            {
                 Server_Shoot(weaponUser, origin, direction);
-            }
             else if (weaponUser.IsLocalOwned)
-            {
                 weaponUser.Client_Shoot(origin, direction);
-            }
         }
+        
         private void _OnRequestToReload(IWeaponUser weaponUser)
         {
             if (weaponUser == null)
                 return;
             if (weaponUser.IsServerSide)
-            {
                 Server_Reload(weaponUser);
-            }
             else if (weaponUser.IsLocalOwned)
-            {
                 weaponUser.Client_Reload();
-            }
         }
         #endregion
+        
         #region Server API
         public bool Server_Shoot(IWeaponUser weaponUser, Vector3 origin, Vector3 direction)
         {
@@ -119,134 +120,106 @@ namespace TUA.Systems
                 Debug.LogWarning($"[WeaponSystem] Server_Shoot: User UUID is invalid.");
                 return false;
             }
+            
             if (!weaponUser.IsValidAndSpawned)
             {
                 Debug.LogWarning($"[WeaponSystem] Server_Shoot: User is not spawned.");
                 return false;
             }
+            
             var inventory = weaponUser.Inventory;
-            if (inventory == null)
-                return false;
-            var selectedItem = inventory.GetSelectedItem();
+
+            var selectedItem = inventory?.GetSelectedItem();
             if (selectedItem == null || !(selectedItem is WeaponItemStack weaponStack))
                 return false;
-            if (itemRegistry == null)
+            
+            if (!itemRegistry)
                 return false;
+            
             var weaponItem = itemRegistry.GetEntry<WeaponItem>(weaponStack.item);
-            if (weaponItem == null)
+            if (!weaponItem)
                 return false;
+            
             var state = weaponUser.WeaponState;
             if (state.IsReloading)
                 return false;
+            
             if (weaponStack.ammo <= 0)
             {
                 Server_Reload(weaponUser);
                 return false;
             }
-            float fireRate = weaponItem.fireRate > 0f ? weaponItem.fireRate : 0.1f;
-            float timeSinceLastFire = Time.time - state.LastFireTime;
+            
+            var fireRate = weaponItem.fireRate > 0f ? weaponItem.fireRate : 0.1f;
+            var timeSinceLastFire = Time.time - state.LastFireTime;
             if (timeSinceLastFire < fireRate)
                 return false;
+            
             weaponStack.ammo--;
             state.LastFireTime = Time.time;
             _SyncAmmo(weaponUser, weaponStack);
-            float range = weaponItem.range > 0f ? weaponItem.range : defaultRange;
-            float damage = weaponItem.damage > 0f ? weaponItem.damage : defaultDamage;
-            
-            // Apply recoil to weapon user (entity knows what weapon it's using)
+            var range = weaponItem.range > 0f ? weaponItem.range : defaultRange;
+            var damage = weaponItem.damage > 0f ? weaponItem.damage : defaultDamage;
             weaponUser.Server_ApplyRecoil();
             
-            // Get movement velocity for firing error calculation
-            Vector3 movementVelocity = weaponUser.Velocity;
-            // Only use horizontal velocity for error calculation
+            var movementVelocity = weaponUser.Velocity;
             movementVelocity.y = 0f;
             
-            // Calculate firing error based on velocity
-            // Scale with velocity squared for stronger effect, then apply multiplier
-            // This makes walking significantly reduce accuracy
-            float firingError = 5 * movementVelocity.magnitude * weaponItem.firingErrorMultiplier * 0.8f;
+            var firingError = 5 * movementVelocity.magnitude * weaponItem.firingErrorMultiplier * 0.8f;
+            var recoilSpreadMultiplier = weaponUser.Server_GetRecoilSpreadMultiplier();
             
-            // Get recoil spread multiplier
-            float recoilSpreadMultiplier = weaponUser.Server_GetRecoilSpreadMultiplier();
-            
-            // Get scope blend and apply spread multiplier when scoped
-            float scopeBlend = weaponUser.GetScopeBlend();
-            float scopeSpreadMultiplier = 1f;
+            var scopeBlend = weaponUser.GetScopeBlend();
+            var scopeSpreadMultiplier = 1f;
             if (scopeBlend > 0f && weaponItem.hasScope)
             {
-                // Lerp between normal spread (1.0) and scoped spread multiplier based on scope blend
                 scopeSpreadMultiplier = Mathf.Lerp(1f, weaponItem.spreadAngleWhenScoping, scopeBlend);
             }
             
-            // Get projectile count (default to 1 for normal weapons)
-            int projectileCount = weaponItem.projectileCount > 0 ? weaponItem.projectileCount : 1;
-            float spreadAngle = weaponItem.spreadAngle;
+            var projectileCount = weaponItem.projectileCount > 0 ? weaponItem.projectileCount : 1;
+            var spreadAngle = weaponItem.spreadAngle;
+            var averageHitPoint = Vector3.zero;
+            var hitPoints = new List<Vector3>();
             
-            // Shoot multiple projectiles if this is a shotgun
-            Vector3 averageHitPoint = Vector3.zero;
-            List<Vector3> hitPoints = new List<Vector3>();
-            
-            for (int i = 0; i < projectileCount; i++)
+            for (var i = 0; i < projectileCount; i++)
             {
-                Vector3 shotDirection = direction;
-                
-                // Apply spread angle for all weapons (multiplied by recoil spread and scope spread)
-                // This allows single-shot weapons to have random spread/miss chance
+                var shotDirection = direction;
                 if (spreadAngle > 0f)
                 {
-                    // Calculate random angle within spread cone (uniform distribution)
-                    // Apply recoil spread multiplier and scope spread multiplier to adjust spread
-                    float effectiveSpreadAngle = spreadAngle * recoilSpreadMultiplier * scopeSpreadMultiplier;
-                    float randomAngle = Random.Range(0f, effectiveSpreadAngle * 0.5f);
-                    float randomRotation = Random.Range(0f, 360f);
+                    var effectiveSpreadAngle = spreadAngle * recoilSpreadMultiplier * scopeSpreadMultiplier;
+                    var randomAngle = Random.Range(0f, effectiveSpreadAngle * 0.5f);
+                    var randomRotation = Random.Range(0f, 360f);
                     
-                    // Create a random direction within the spread cone
-                    // First, find perpendicular vectors to the direction
-                    Vector3 up = Vector3.up;
-                    Vector3 right = Vector3.Cross(direction, up).normalized;
+                    var up = Vector3.up;
+                    var right = Vector3.Cross(direction, up).normalized;
                     if (right.magnitude < 0.1f)
                     {
-                        // If direction is parallel to up, use forward instead
                         right = Vector3.Cross(direction, Vector3.forward).normalized;
-                        up = Vector3.Cross(right, direction).normalized;
                     }
-                    else
-                    {
-                        up = Vector3.Cross(right, direction).normalized;
-                    }
-                    
-                    // Create a random point on a unit circle in the perpendicular plane
-                    float angleRad = randomRotation * Mathf.Deg2Rad;
-                    Vector3 perpendicularOffset = (right * Mathf.Cos(angleRad) + up * Mathf.Sin(angleRad)) * Mathf.Tan(randomAngle * Mathf.Deg2Rad);
-                    
-                    // Apply the offset to create the spread direction
+
+                    up = Vector3.Cross(right, direction).normalized;
+
+                    var angleRad = randomRotation * Mathf.Deg2Rad;
+                    var perpendicularOffset = (right * Mathf.Cos(angleRad) + up * Mathf.Sin(angleRad)) * Mathf.Tan(randomAngle * Mathf.Deg2Rad);
                     shotDirection = (direction + perpendicularOffset).normalized;
                 }
-                
-                // Apply firing error based on movement velocity and recoil (applies to all weapons)
-                // Recoil increases spread even when not moving
-                // Also apply scope spread multiplier when scoped
-                float effectiveFiringError = firingError * recoilSpreadMultiplier * scopeSpreadMultiplier;
+
+                var effectiveFiringError = firingError * recoilSpreadMultiplier * scopeSpreadMultiplier;
                 if (effectiveFiringError > 0f && (movementVelocity.magnitude > 0.01f || recoilSpreadMultiplier > 1f))
                 {
-                    // Calculate random error angle based on velocity and recoil
-                    float errorAngle = Random.Range(0f, effectiveFiringError);
-                    float errorRotation = Random.Range(0f, 360f);
+                    var errorAngle = Random.Range(0f, effectiveFiringError);
+                    var errorRotation = Random.Range(0f, 360f);
                     
-                    // Use a perpendicular vector to the shot direction for the rotation axis
-                    Vector3 right = Vector3.Cross(shotDirection, Vector3.up).normalized;
+                    var right = Vector3.Cross(shotDirection, Vector3.up).normalized;
                     if (right.magnitude < 0.1f)
                         right = Vector3.Cross(shotDirection, Vector3.forward).normalized;
                     
-                    // Apply random error in a cone around the shot direction
-                    Quaternion errorRotationQuat = Quaternion.AngleAxis(errorAngle, right);
+                    var errorRotationQuat = Quaternion.AngleAxis(errorAngle, right);
                     errorRotationQuat *= Quaternion.AngleAxis(errorRotation, shotDirection);
                     shotDirection = errorRotationQuat * shotDirection;
                 }
                 
-                // Perform raycast for this projectile
                 Vector3 hitPoint;
-                if (Physics.Raycast(origin, shotDirection, out RaycastHit hit, range, hitLayers))
+                if (Physics.Raycast(origin, shotDirection, out var hit, range, hitLayers))
                 {
                     hitPoint = hit.point;
                     Debug.Log($"[WeaponSystem] Server_Shoot: Raycast HIT - Origin: {origin}, Direction: {shotDirection}, Hit Point: {hitPoint}, Collider: {hit.collider.name} (Layer: {hit.collider.gameObject.layer}), Distance: {hit.distance:F2}m");
@@ -263,67 +236,65 @@ namespace TUA.Systems
                 averageHitPoint += hitPoint;
             }
             
-            // Average hit point for visual effect
             averageHitPoint /= projectileCount;
             
-            // Get weapon exit point for muzzle flash (origin is already the bullet exit position)
-            Vector3 weaponExit = origin;   
-            // Spawn all shot effects together (unified to save RPC data)
+             var weaponExit = origin;   
             if (projectileCount > 1)
             {
-                // For shotguns, spawn effects for each pellet
-                foreach (Vector3 hitPoint in hitPoints)
+                foreach (var hitPoint in hitPoints)
                 {
                     RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, hitPoint);
                 }
             }
             else
             {
-                // For single projectile weapons, spawn one set of effects
                 RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, averageHitPoint);
             }
             return true;
         }
+        
         public bool Server_Reload(IWeaponUser weaponUser)
         {
-            if (weaponUser == null || !weaponUser.IsServerSide)
+            if (weaponUser is not { IsServerSide: true })
                 return false;
+            
             var inventory = weaponUser.Inventory;
-            if (inventory == null)
+
+            var selectedItem = inventory?.GetSelectedItem();
+            if (selectedItem is not WeaponItemStack weaponStack)
                 return false;
-            var selectedItem = inventory.GetSelectedItem();
-            if (selectedItem == null || selectedItem is not WeaponItemStack weaponStack)
+            
+            if (!itemRegistry)
                 return false;
-            if (itemRegistry == null)
-                return false;
+            
             var weaponItem = itemRegistry.GetEntry<WeaponItem>(weaponStack.item);
-            if (weaponItem == null)
+            if (!weaponItem)
                 return false;
+            
             var state = weaponUser.WeaponState;
             if (state.IsReloading)
                 return false;
+            
             if (weaponStack.ammo >= weaponStack.maxAmmo)
                 return false;
+            
             state.IsReloading = true;
             state.ReloadStartTime = Time.time;
             
-            // Send RPC to all clients to play reload animation
             RpcClient_PlayReloadAnimation(weaponUser.UserUuid, weaponItem.reloadClipName, weaponItem.reloadClipLength, weaponItem.reloadTime);
             
-            // Set initial progress to 0
             weaponUser.Server_SetReloadProgress(0f);
-            
             StartCoroutine(_ReloadCoroutine(weaponUser, weaponStack.item, inventory.selectedSlot, weaponItem));
             return true;
         }
+        
         private System.Collections.IEnumerator _ReloadCoroutine(IWeaponUser weaponUser, string weaponItemId, int selectedSlot, WeaponItem weaponItem)
         {
-            float reloadTime = weaponItem.reloadTime > 0f ? weaponItem.reloadTime : 1f;
-            float startTime = Time.time;
+            var reloadTime = weaponItem.reloadTime > 0f ? weaponItem.reloadTime : 1f;
+            var startTime = Time.time;
             
             while (Time.time - startTime < reloadTime)
             {
-                // Check if reload should be cancelled
                 if (weaponUser == null || !weaponUser.IsServerSide)
                 {
                     weaponUser?.Server_SetReloadProgress(0f);
@@ -337,7 +308,6 @@ namespace TUA.Systems
                     yield break;
                 }
                 
-                // Cancel if selected slot changed or item changed
                 var selectedItem = inventory.GetSelectedItem();
                 if (selectedItem == null || !(selectedItem is WeaponItemStack weaponStack) || 
                     weaponStack.item != weaponItemId || inventory.selectedSlot != selectedSlot)
@@ -348,14 +318,11 @@ namespace TUA.Systems
                     yield break;
                 }
                 
-                // Update progress
-                float progress = (Time.time - startTime) / reloadTime;
+                var progress = (Time.time - startTime) / reloadTime;
                 weaponUser.Server_SetReloadProgress(progress);
-                
                 yield return null;
             }
             
-            // Final check before completing reload
             if (weaponUser == null || !weaponUser.IsServerSide)
             {
                 weaponUser?.Server_SetReloadProgress(0f);
@@ -380,27 +347,25 @@ namespace TUA.Systems
                 yield break;
             }
             
-            // Complete reload
-            int ammoToReload = weaponItem.magazineSize > 0 ? weaponItem.magazineSize : weaponStack2.maxAmmo;
+            var ammoToReload = weaponItem.magazineSize > 0 ? weaponItem.magazineSize : weaponStack2.maxAmmo;
             weaponStack2.ammo = Mathf.Min(ammoToReload, weaponStack2.maxAmmo);
             _SyncAmmo(weaponUser, weaponStack2);
             
-            // Reset progress to 0 to hide the reload bar
             weaponUser.Server_SetReloadProgress(0f);
         }
         #endregion
+        
         #region Methods
         private void _GetShootingOriginAndDirection(IWeaponUser weaponUser, out Vector3 origin, out Vector3 direction)
         {
-            // Get bullet exit position as origin
             origin = weaponUser.GetCurrentWeaponExit();
-            
-            // Get direction from camera view
-            if (CameraSystem.Instance != null && CameraSystem.Instance.mainCamera != null)
+
+            if (CameraSystem.Instance && CameraSystem.Instance.mainCamera )
             {
                 direction = CameraSystem.Instance.mainCamera.transform.forward;
                 return;
             }
+            
             if (weaponUser is IPovHandler povHandler)
             {
                 povHandler.GetCameraView(out _, out var rotation, out _);
@@ -409,48 +374,26 @@ namespace TUA.Systems
             }
             direction = (weaponUser as MonoBehaviour)?.transform.forward ?? Vector3.forward;
         }
+        
         private void _OnWeaponHit(IWeaponUser shooter, RaycastHit hit, float damage, WeaponItem weaponItem)
         {
-            Debug.Log($"[WeaponSystem] _OnWeaponHit: Called - Shooter: {shooter?.UserUuid}, Collider: {hit.collider.name}, GameObject: {hit.collider.gameObject.name}, Layer: {hit.collider.gameObject.layer}, Base Damage: {damage}");
+            var isHeadshot = headLayer != 0 && ((1 << hit.collider.gameObject.layer) & headLayer) != 0;
+            var finalDamage = damage;
             
-            // Check if this is a headshot
-            bool isHeadshot = headLayer != 0 && ((1 << hit.collider.gameObject.layer) & headLayer) != 0;
-            float finalDamage = damage;
-            
-            if (isHeadshot && weaponItem != null)
-            {
+            if (isHeadshot && weaponItem)
                 finalDamage *= weaponItem.headshotDamageMultiplier;
-                Debug.Log($"[WeaponSystem] _OnWeaponHit: HEADSHOT detected! Multiplier: {weaponItem.headshotDamageMultiplier}, Final Damage: {finalDamage}");
-            }
             
             var healthComponent = hit.collider.GetComponent<IHealth>();
             if (healthComponent != null)
-            {
-                Debug.Log($"[WeaponSystem] _OnWeaponHit: IHealth component found! Current Health: {healthComponent.CurrentHealth}/{healthComponent.MaxHealth}, Applying Damage: {finalDamage}");
                 healthComponent.Server_TakeDamage(finalDamage);
-                Debug.Log($"[WeaponSystem] _OnWeaponHit: Damage applied! New Health: {healthComponent.CurrentHealth}/{healthComponent.MaxHealth}");
-            }
             else
             {
-                Debug.LogWarning($"[WeaponSystem] _OnWeaponHit: NO IHealth component found on {hit.collider.name}! Cannot deal damage.");
-                
-                // Try to find IHealth on parent or root
                 var parentHealth = hit.collider.GetComponentInParent<IHealth>();
-                if (parentHealth != null)
-                {
-                    Debug.Log($"[WeaponSystem] _OnWeaponHit: Found IHealth on parent! Current Health: {parentHealth.CurrentHealth}/{parentHealth.MaxHealth}, Applying Damage: {finalDamage}");
-                    parentHealth.Server_TakeDamage(finalDamage);
-                    Debug.Log($"[WeaponSystem] _OnWeaponHit: Damage applied to parent! New Health: {parentHealth.CurrentHealth}/{parentHealth.MaxHealth}");
-                }
-                else
-                {
-                    Debug.LogWarning($"[WeaponSystem] _OnWeaponHit: No IHealth component found on parent either. Root: {hit.collider.transform.root.name}");
-                }
+                parentHealth?.Server_TakeDamage(finalDamage);
             }
         }
         private void _OnWeaponMiss(IWeaponUser shooter, Vector3 endPoint)
         {
-            Debug.Log($"[WeaponSystem] _OnWeaponMiss: Shooter: {shooter?.UserUuid}, End Point: {endPoint}");
         }
         
         private Transform FindChildRecursive(Transform parent, string name)
@@ -459,8 +402,9 @@ namespace TUA.Systems
             {
                 if (child.name == name)
                     return child;
-                Transform found = FindChildRecursive(child, name);
-                if (found != null)
+                
+                var found = FindChildRecursive(child, name);
+                if (found)
                     return found;
             }
             return null;
@@ -470,72 +414,64 @@ namespace TUA.Systems
         {
             if (weaponUser == null || weaponStack == null)
                 return;
+            
             var inventory = weaponUser.Inventory;
             if (inventory == null)
                 return;
+            
             var newInventory = inventory.Copy();
-            if (newInventory.selectedSlot >= 0 && newInventory.selectedSlot < newInventory.slots.Length)
-            {
-                var selectedStack = newInventory.slots[newInventory.selectedSlot] as WeaponItemStack;
-                if (selectedStack != null && selectedStack.item == weaponStack.item)
-                {
-                    selectedStack.ammo = weaponStack.ammo;
-                    selectedStack.maxAmmo = weaponStack.maxAmmo;
-                    weaponUser.Server_SetInventory(newInventory);
-                }
-            }
+            if (newInventory.selectedSlot < 0 || newInventory.selectedSlot >= newInventory.slots.Length)
+                return;
+
+            if (newInventory.slots[newInventory.selectedSlot] is not WeaponItemStack selectedStack ||
+                selectedStack.item != weaponStack.item) return;
+            
+            selectedStack.ammo = weaponStack.ammo;
+            selectedStack.maxAmmo = weaponStack.maxAmmo;
+            weaponUser.Server_SetInventory(newInventory);
         }
+        
         public void SpawnShotEffectsLocally(IWeaponUser weaponUser, Vector3 weaponExit, Vector3 hitPoint)
         {
             if (weaponUser == null)
                 return;
 
-            // If this is the local player's entity, get the gun exit ourselves for better accuracy
-            Vector3 actualWeaponExit = weaponUser.GetCurrentWeaponExit();
+            var actualWeaponExit = weaponUser.GetCurrentWeaponExit();
 
-            // Play shot sound
-            if (AudioSystem.Instance != null && itemRegistry != null)
+            if (AudioSystem.Instance && itemRegistry)
             {
                 var inventory = weaponUser.Inventory;
-                if (inventory != null)
+                var selectedItem = inventory?.GetSelectedItem();
+                if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.item))
                 {
-                    var selectedItem = inventory.GetSelectedItem();
-                    if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.item))
+                    var weaponItem = itemRegistry.GetEntry<WeaponItem>(selectedItem.item);
+                    if (weaponItem && !string.IsNullOrEmpty(weaponItem.shotSoundKey))
                     {
-                        var weaponItem = itemRegistry.GetEntry<WeaponItem>(selectedItem.item);
-                        if (weaponItem != null && !string.IsNullOrEmpty(weaponItem.shotSoundKey))
-                        {
-                            AudioSystem.Instance.PlayLocal(weaponItem.shotSoundKey, actualWeaponExit, 1f, AudioCategory.SFX);
-                        }
+                        AudioSystem.Instance.PlayLocal(weaponItem.shotSoundKey, actualWeaponExit, 1f, AudioCategory.SFX);
                     }
                 }
             }
 
-            // Spawn muzzle flash at weapon exit point
-            if (muzzleFlashPrefab != null)
+            if (muzzleFlashPrefab)
             {
-                GameObject muzzleFlash = Instantiate(muzzleFlashPrefab);
+                var muzzleFlash = Instantiate(muzzleFlashPrefab);
                 muzzleFlash.transform.position = actualWeaponExit;
-                Vector3 direction = (hitPoint - actualWeaponExit).normalized;
+                var direction = (hitPoint - actualWeaponExit).normalized;
                 if (direction.magnitude > 0.1f)
-                {
                     muzzleFlash.transform.rotation = Quaternion.LookRotation(direction);
-                }
             }
             
-            // Spawn bullet trace
-            if (bulletTracePrefab != null && actualWeaponExit != hitPoint)
+            if (bulletTracePrefab && actualWeaponExit != hitPoint)
             {
-            BulletTrace bulletTrace = Instantiate(bulletTracePrefab);
+                var bulletTrace = Instantiate(bulletTracePrefab);
                 bulletTrace.Initialize(actualWeaponExit, hitPoint);
             }
+
+            if (hitEffectPrefab == null) 
+                return;
             
-            // Spawn hit effect at hit point
-            if (hitEffectPrefab != null)
-            {
-                GameObject hitEffect = Instantiate(hitEffectPrefab);
-                hitEffect.transform.position = hitPoint;
-            }
+            var hitEffect = Instantiate(hitEffectPrefab);
+            hitEffect.transform.position = hitPoint;
         }
         #endregion
     }

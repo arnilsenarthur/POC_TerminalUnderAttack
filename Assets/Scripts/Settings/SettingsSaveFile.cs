@@ -8,7 +8,7 @@ namespace TUA.Settings
     internal sealed class SettingsSaveFile
     {
         [FormerlySerializedAs("Version")] public int version = 1;
-        [FormerlySerializedAs("Items")] public List<SettingsSaveItem> items = new List<SettingsSaveItem>();
+        [FormerlySerializedAs("Items")] public List<SettingsSaveItem> items = new();
     }
 }
 

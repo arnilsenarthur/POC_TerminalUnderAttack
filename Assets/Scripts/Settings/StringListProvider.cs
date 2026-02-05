@@ -27,8 +27,11 @@ namespace TUA.Settings
 
         public override bool Validate(SettingsAsset settings, SettingEntry entry, ref SettingValue value)
         {
-            if (entry == null) return true;
-            if (entry.Type != SettingType.String) return true;
+            if (entry == null) 
+                return true;
+            
+            if (entry.Type != SettingType.String) 
+                return true;
 
             if (value.type != SettingType.String)
                 value = SettingValue.FromString(entry.DefaultString);
@@ -36,11 +39,11 @@ namespace TUA.Settings
             if (IsInList(value.stringValue))
                 return true;
 
-            var fallback = !string.IsNullOrWhiteSpace(this.fallback) && IsInList(this.fallback)
-                ? this.fallback
+            var fallbackInternal = !string.IsNullOrWhiteSpace(this.fallback) && IsInList(this.fallback)
+                ? fallback
                 : (options != null && options.Count > 0 ? options[0] : value.stringValue);
 
-            value = SettingValue.FromString(fallback);
+            value = SettingValue.FromString(fallbackInternal);
             return true;
         }
 
@@ -50,15 +53,16 @@ namespace TUA.Settings
             if (opts == null || opts.Count == 0) return true;
 
             value ??= "";
-            for (var i = 0; i < opts.Count; i++)
+            foreach (var t in opts)
             {
                 if (caseSensitive)
                 {
-                    if (opts[i] == value) return true;
+                    if (t == value) 
+                        return true;
                 }
                 else
                 {
-                    if (string.Equals(opts[i], value, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(t, value, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
             }

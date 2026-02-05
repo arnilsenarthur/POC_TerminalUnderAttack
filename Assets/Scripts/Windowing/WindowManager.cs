@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -11,24 +13,30 @@ namespace TUA.Windowing
     public class WindowManager : MonoBehaviour
     {
         #region Serialized Fields
+        [FormerlySerializedAs("_controlsMouse")]
         [Header("Mouse Control")]
         [Tooltip("Lock/unlock mouse when windows are open or not")]
-        [SerializeField] private bool _controlsMouse = true;
+        [SerializeField] private bool controlsMouse = true;
+        [FormerlySerializedAs("_windowToOpenOnEsc")]
         [Header("ESC Key Behavior")]
         [Tooltip("Window to open when ESC is pressed and no windows are open. Leave null to do nothing.")]
-        [SerializeField] private Window _windowToOpenOnEsc;
+        [SerializeField] private Window windowToOpenOnEsc;
+        [FormerlySerializedAs("_fixedView")]
         [Header("Fixed View")]
         [Tooltip("UIDocument that should be turned on/off based on when windows are open")]
-        [SerializeField] private UIDocument _fixedView;
+        [SerializeField] private UIDocument fixedView;
+        [FormerlySerializedAs("_closeDelay")]
         [Header("Animation")]
         [Tooltip("Delay before disabling GameObject when closing (to allow fade-out animation)")]
-        [SerializeField] private float _closeDelay = 0.3f;
+        [SerializeField] private float closeDelay = 0.3f;
         #endregion
+        
         #region Fields
         private VisualElement _fixedViewRoot;
-        private Stack<Window> _windowStack = new Stack<Window>();
-        private Dictionary<Window, Coroutine> _closeCoroutines = new Dictionary<Window, Coroutine>();
+        private Stack<Window> _windowStack = new();
+        private readonly Dictionary<Window, Coroutine> _closeCoroutines = new();
         #endregion
+        
         #region Unity Callbacks
         private void Update()
         {
@@ -36,6 +44,7 @@ namespace TUA.Windowing
                 _HandleEscape();
         }
         #endregion
+        
         #region Methods
         private bool _IsEscapePressed()
         {
@@ -46,6 +55,7 @@ namespace TUA.Windowing
 #endif
             return Input.GetKeyDown(KeyCode.Escape);
         }
+        
         private void _HandleEscape()
         {
             if (_windowStack.Count > 0)
@@ -54,36 +64,41 @@ namespace TUA.Windowing
                 for (int i = stackList.Count - 1; i >= 0; i--)
                 {
                     Window window = stackList[i];
-                    if (window != null && window.gameObject.activeSelf && window.CanCloseWithEsc)
-                    {
-                        CloseWindow(window);
-                        return;
-                    }
+                    if (!window || !window.gameObject.activeSelf || !window.CanCloseWithEsc) 
+                        continue;
+                    
+                    CloseWindow(window);
+                    return;
                 }
             }
-            if (_windowToOpenOnEsc != null && !_windowToOpenOnEsc.gameObject.activeSelf)
-                OpenWindow(_windowToOpenOnEsc);
+            
+            if (windowToOpenOnEsc && !windowToOpenOnEsc.gameObject.activeSelf)
+                OpenWindow(windowToOpenOnEsc);
         }
+        
         public void OpenWindow(Window window)
         {
-            if (window == null) return;
+            if (!window) 
+                return;
+            
             if (_closeCoroutines.TryGetValue(window, out var existingClose))
             {
                 if (existingClose != null)
                     StopCoroutine(existingClose);
+                
                 _closeCoroutines.Remove(window);
             }
+            
             var stackList = new List<Window>(_windowStack);
-            foreach (var existingWindow in stackList)
+            foreach (var existingWindow in stackList.Where(existingWindow => existingWindow && existingWindow.gameObject.activeSelf))
             {
-                if (existingWindow != null && existingWindow.gameObject.activeSelf)
-                {
-                    existingWindow.SetVisibleInstant(false);
-                    existingWindow.gameObject.SetActive(false);
-                }
+                existingWindow.SetVisibleInstant(false);
+                existingWindow.gameObject.SetActive(false);
             }
+            
             if (stackList.Contains(window))
                 stackList.Remove(window);
+            
             stackList.Add(window);
             _windowStack = new Stack<Window>(stackList);
             window.gameObject.SetActive(true);
@@ -91,75 +106,69 @@ namespace TUA.Windowing
             _UpdateState();
             StartCoroutine(_ShowWindowAfterFrame(window));
         }
+        
         private IEnumerator _ShowWindowAfterFrame(Window window)
         {
             yield return null;
-            if (window != null && window.gameObject.activeSelf)
+            if (window && window.gameObject.activeSelf)
                 window.SetVisible(true);
         }
+        
         public void CloseWindow(Window window)
         {
-            if (window == null) return;
+            if (!window) 
+                return;
+            
             window.SetVisible(false);
             var stackList = new List<Window>(_windowStack);
             stackList.Remove(window);
             _windowStack = new Stack<Window>(stackList);
+            
             if (_closeCoroutines.TryGetValue(window, out var existingCoroutine))
             {
                 if (existingCoroutine != null)
                     StopCoroutine(existingCoroutine);
             }
-            var coroutine = StartCoroutine(_CloseWindowDelayed(window, _closeDelay));
+            
+            var coroutine = StartCoroutine(_CloseWindowDelayed(window, closeDelay));
             _closeCoroutines[window] = coroutine;
             if (stackList.Count > 0)
             {
-                Window previousWindow = stackList[stackList.Count - 1];
-                if (previousWindow != null)
-                {
-                    previousWindow.gameObject.SetActive(true);
-                    previousWindow.SetVisibleInstant(true);
-                    _UpdateState();
-                    StartCoroutine(_ShowWindowAfterFrame(previousWindow));
-                }
+                var previousWindow = stackList[^1];
+                if (previousWindow == null) 
+                    return;
+                
+                previousWindow.gameObject.SetActive(true);
+                previousWindow.SetVisibleInstant(true);
+                _UpdateState();
+                StartCoroutine(_ShowWindowAfterFrame(previousWindow));
             }
             else
                 StartCoroutine(_UpdateStateAfterFrame());
         }
+        
         private IEnumerator _CloseWindowDelayed(Window window, float delay)
         {
             yield return new WaitForSeconds(delay);
-            if (window != null)
+            if (window)
                 window.gameObject.SetActive(false);
-            if (_closeCoroutines.ContainsKey(window))
-                _closeCoroutines.Remove(window);
+            
+            _closeCoroutines.Remove(window);
         }
+        
         private IEnumerator _UpdateStateAfterFrame()
         {
             yield return null;
-            bool hasOpenWindow = false;
-            foreach (var window in _windowStack)
-            {
-                if (window != null && window.gameObject.activeSelf && window.IsVisible)
-                {
-                    hasOpenWindow = true;
-                    break;
-                }
-            }
+            var hasOpenWindow = _windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
+            
             if (!hasOpenWindow)
                 _UpdateState();
         }
+        
         private void _UpdateState()
         {
-            bool hasOpenWindow = false;
-            foreach (var window in _windowStack)
-            {
-                if (window != null && window.gameObject.activeSelf && window.IsVisible)
-                {
-                    hasOpenWindow = true;
-                    break;
-                }
-            }
-            if (_controlsMouse)
+            var hasOpenWindow = _windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
+            if (controlsMouse)
             {
                 if (hasOpenWindow)
                 {
@@ -172,38 +181,27 @@ namespace TUA.Windowing
                     UnityEngine.Cursor.visible = false;
                 }
             }
-            if (_fixedView != null)
-            {
-                if (_fixedViewRoot == null && _fixedView.rootVisualElement != null)
-                    _fixedViewRoot = _fixedView.rootVisualElement;
-                if (_fixedViewRoot != null)
-                    _fixedViewRoot.style.display = hasOpenWindow ? DisplayStyle.None : DisplayStyle.Flex;
-                else
-                    _fixedView.gameObject.SetActive(!hasOpenWindow);
-            }
+
+            if (!fixedView) 
+                return;
+            
+            if (_fixedViewRoot == null && fixedView.rootVisualElement != null)
+                _fixedViewRoot = fixedView.rootVisualElement;
+            if (_fixedViewRoot != null)
+                _fixedViewRoot.style.display = hasOpenWindow ? DisplayStyle.None : DisplayStyle.Flex;
+            else
+                fixedView.gameObject.SetActive(!hasOpenWindow);
         }
+        
         public static WindowManager FindInScene()
         {
             return FindFirstObjectByType<WindowManager>();
         }
 
-        /// <summary>
-        /// Checks if any window is currently open and visible.
-        /// </summary>
         public static bool HasOpenWindow()
         {
             var manager = FindInScene();
-            if (manager == null)
-                return false;
-            
-            foreach (var window in manager._windowStack)
-            {
-                if (window != null && window.gameObject.activeSelf && window.IsVisible)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return manager && manager._windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
         }
         #endregion
     }

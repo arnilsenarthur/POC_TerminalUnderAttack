@@ -6,10 +6,8 @@ using TUA.Settings;
 using TUA.Windowing;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace TUA.UI
 {
@@ -18,16 +16,18 @@ namespace TUA.UI
     public class SettingsMenuController : Window
     {
         #region Serialized Fields
+        [FormerlySerializedAs("_pages")]
         [Header("Pages")]
-        [SerializeField] private List<SettingsAsset> _pages = new List<SettingsAsset>();
-        [SerializeField] private int _startPageIndex;
+        [SerializeField] private List<SettingsAsset> pages = new();
+        [FormerlySerializedAs("_startPageIndex")] [SerializeField] private int startPageIndex;
 
+        [FormerlySerializedAs("_labelWidget")]
         [Header("Widgets (UXML Templates)")]
-        [SerializeField] private VisualTreeAsset _labelWidget;
-        [SerializeField] private VisualTreeAsset _boolWidget;
-        [SerializeField] private VisualTreeAsset _intWidget;
-        [SerializeField] private VisualTreeAsset _floatWidget;
-        [SerializeField] private VisualTreeAsset _stringWidget;
+        [SerializeField] private VisualTreeAsset labelWidget;
+        [FormerlySerializedAs("_boolWidget")] [SerializeField] private VisualTreeAsset boolWidget;
+        [FormerlySerializedAs("_intWidget")] [SerializeField] private VisualTreeAsset intWidget;
+        [FormerlySerializedAs("_floatWidget")] [SerializeField] private VisualTreeAsset floatWidget;
+        [FormerlySerializedAs("_stringWidget")] [SerializeField] private VisualTreeAsset stringWidget;
         #endregion
 
         #region Fields
@@ -39,8 +39,8 @@ namespace TUA.UI
         private Button _closeButton;
         private ScrollView _scrollView;
         private SettingsAsset _activePage;
-        private readonly Dictionary<string, Action<SettingChanged>> _activeBindings = new Dictionary<string, Action<SettingChanged>>(StringComparer.Ordinal);
-        private readonly List<Button> _tabButtons = new List<Button>();
+        private readonly Dictionary<string, Action<SettingChanged>> _activeBindings = new(StringComparer.Ordinal);
+        private readonly List<Button> _tabButtons = new();
         private EventCallback<GeometryChangedEvent> _onOverlayGeometryChanged;
         private bool _layoutFallbackApplied;
         #endregion
@@ -77,7 +77,12 @@ namespace TUA.UI
 
             if (_panelAnim != null)
             {
-                try { _panelAnim.Stop(); } catch {  }
+                try { _panelAnim.Stop(); }
+                catch
+                {
+                    // ignored
+                }
+
                 _panelAnim = null;
             }
         }
@@ -85,41 +90,38 @@ namespace TUA.UI
         protected override VisualElement _FindOverlay()
         {
             _EnsureWorldSpaceColliderIfNeeded();
-            return _root?.Q<VisualElement>("SettingsOverlay");
+            return Root?.Q<VisualElement>("SettingsOverlay");
         }
         protected override void _InitializeElements()
         {
-            
             _onOverlayGeometryChanged ??= _ =>
             {
-                if (_overlay == null) return;
-                if (_overlay.style.display == DisplayStyle.None) return; 
+                if (Overlay == null) return;
+                if (Overlay.style.display == DisplayStyle.None) return; 
                 if (_layoutFallbackApplied) return;
-                if (_overlay.resolvedStyle.width < 2f || _overlay.resolvedStyle.height < 2f)
+                if (Overlay.resolvedStyle.width < 2f || Overlay.resolvedStyle.height < 2f)
                 {
                     Debug.LogWarning("[SettingsMenuController] SettingsOverlay has near-zero size. Applying fallback layout styles.", this);
                     _ApplyFallbackLayoutStyles();
                     _layoutFallbackApplied = true;
                 }
             };
-            _overlay.UnregisterCallback<GeometryChangedEvent>(_onOverlayGeometryChanged);
-            _overlay.RegisterCallback<GeometryChangedEvent>(_onOverlayGeometryChanged);
+            Overlay.UnregisterCallback(_onOverlayGeometryChanged);
+            Overlay.RegisterCallback(_onOverlayGeometryChanged);
 
             
-            _backdrop = _overlay.Q<VisualElement>("Backdrop");
-            _panel = _overlay.Q<VisualElement>("SettingsPanel");
-            _tabs = _overlay.Q<VisualElement>("Tabs");
-            _list = _overlay.Q<VisualElement>("SettingsList");
-            _scrollView = _overlay.Q<ScrollView>("SettingsScroll");
-            _title = _overlay.Q<Label>("Title");
-            _closeButton = _overlay.Q<Button>("CloseButton");
+            Backdrop = Overlay.Q<VisualElement>("Backdrop");
+            Panel = Overlay.Q<VisualElement>("SettingsPanel");
+            _tabs = Overlay.Q<VisualElement>("Tabs");
+            _list = Overlay.Q<VisualElement>("SettingsList");
+            _scrollView = Overlay.Q<ScrollView>("SettingsScroll");
+            _title = Overlay.Q<Label>("Title");
+            _closeButton = Overlay.Q<Button>("CloseButton");
 
             if (_scrollView != null)
             {
                 
                 _scrollView.AddToClassList("tua-scrollview");
-                
-                
                 _scrollView.contentContainer.style.width = Length.Percent(100);
                 _scrollView.contentContainer.style.alignItems = Align.Stretch;
             }
@@ -130,33 +132,29 @@ namespace TUA.UI
                 _list.style.flexGrow = 1f;
                 _list.style.alignItems = Align.Stretch;
             }
-
             
-            if (_panel != null && _overlay != null)
+            if (Panel != null && Overlay != null)
             {
                 void UpdatePanelSize()
                 {
-                    if (_panel != null && _overlay != null)
+                    if (Panel != null && Overlay != null)
                     {
-                        float screenHeight = _overlay.resolvedStyle.height;
-                        float panelHeight = screenHeight - 52f; 
-                        _panel.style.height = panelHeight;
-                        _panel.style.maxHeight = panelHeight;
+                        var screenHeight = Overlay.resolvedStyle.height;
+                        var panelHeight = screenHeight - 52f; 
+                        Panel.style.height = panelHeight;
+                        Panel.style.maxHeight = panelHeight;
                     }
                 }
                 
-                _overlay.RegisterCallback<GeometryChangedEvent>(evt => UpdatePanelSize());
+                Overlay.RegisterCallback<GeometryChangedEvent>(_ => UpdatePanelSize());
                 
-                
-                if (_overlay.resolvedStyle.height > 0)
-                {
+                if (Overlay.resolvedStyle.height > 0)
                     UpdatePanelSize();
-                }
             }
 
             _BuildTabs();
-            int index = Mathf.Clamp(_startPageIndex, 0, Mathf.Max(0, _pages.Count - 1));
-            if (_pages.Count > 0)
+            var index = Mathf.Clamp(startPageIndex, 0, Mathf.Max(0, pages.Count - 1));
+            if (pages.Count > 0)
                 _ShowPage(index);
         }
 
@@ -171,95 +169,82 @@ namespace TUA.UI
 
         private void _EnsureWorldSpaceColliderIfNeeded()
         {
-            if (_uiDocument == null) return;
-
-            
+            if (!uiDocument) 
+                return;
             
             try
             {
-                var existing = _uiDocument.GetComponent<BoxCollider>();
-                if (existing == null)
-                    existing = _uiDocument.gameObject.AddComponent<BoxCollider>();
+                var existing = uiDocument.GetComponent<BoxCollider>();
+                if (!existing)
+                    existing = uiDocument.gameObject.AddComponent<BoxCollider>();
 
                 existing.isTrigger = true;
                 existing.center = Vector3.zero;
                 existing.size = new Vector3(10f, 10f, 0.1f);
-
-                
                 
                 var t = typeof(UIDocument);
                 var field = t.GetField("m_WorldSpaceCollider", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (field != null)
                 {
-                    var current = field.GetValue(_uiDocument) as Collider;
-                    if (current == null)
-                        field.SetValue(_uiDocument, existing);
+                    var current = field.GetValue(uiDocument) as Collider;
+                    if (!current)
+                        field.SetValue(uiDocument, existing);
                 }
             }
             catch
             {
-                
+                // ignored
             }
         }
 
         public override void SetVisible(bool visible)
         {
-            if (_overlay == null) return;
+            if (Overlay == null) 
+                return;
             
             if (visible)
             {
                 _CancelPanelAnimations();
+                
+                Overlay.style.display = DisplayStyle.Flex;
+                Overlay.pickingMode = PickingMode.Position;
+                
+                if (Backdrop != null)
+                    Backdrop.style.opacity = 1f;
 
+                if (Panel == null) 
+                    return;
                 
-                _overlay.style.display = DisplayStyle.Flex;
-                _overlay.pickingMode = PickingMode.Position;
-                
-                
-                if (_backdrop != null)
+                Panel.style.opacity = 0f;
+                Panel.style.scale = new Scale(new Vector3(0.9f, 0.9f, 1f));
+                _scheduledOpenAnim = Panel.schedule.Execute(() =>
                 {
-                    _backdrop.style.opacity = 1f;
-                }
-                
-                
-                if (_panel != null)
-                {
-                    _panel.style.opacity = 0f;
-                    _panel.style.scale = new Scale(new Vector3(0.9f, 0.9f, 1f));
-                    _scheduledOpenAnim = _panel.schedule.Execute(() =>
-                    {
-                        _panelAnim = _panel.experimental.animation
-                            .Start(0f, 1f, 300, (element, value) =>
-                            {
-                                element.style.opacity = value;
-                                float scale = 0.9f + (value * 0.1f); 
-                                element.style.scale = new Scale(new Vector3(scale, scale, 1f));
-                            })
-                            .KeepAlive()
-                            .OnCompleted(() => _panelAnim = null);
-                    });
-                    _scheduledOpenAnim.ExecuteLater(1);
-                }
+                    _panelAnim = Panel.experimental.animation
+                        .Start(0f, 1f, 300, (element, value) =>
+                        {
+                            element.style.opacity = value;
+                            var scale = 0.9f + (value * 0.1f); 
+                            element.style.scale = new Scale(new Vector3(scale, scale, 1f));
+                        })
+                        .KeepAlive()
+                        .OnCompleted(() => _panelAnim = null);
+                });
+                _scheduledOpenAnim.ExecuteLater(1);
             }
             else
             {
                 _CancelPanelAnimations();
-
                 
-                if (_backdrop != null)
+                if (Backdrop != null)
+                    Backdrop.style.opacity = 0f;
+  
+                if (Panel != null)
                 {
-                    _backdrop.style.opacity = 0f;
-                }
-                
-                
-                if (_panel != null)
-                {
-                    
-                    
-                    _panelAnim = _panel.experimental.animation
+                    _panelAnim = Panel.experimental.animation
                         .Start(1f, 0f, 300, (element, value) =>
                         {
                             element.style.opacity = value;
-                            float scale = 0.9f + (value * 0.1f); 
+                            var scale = 0.9f + (value * 0.1f); 
                             element.style.scale = new Scale(new Vector3(scale, scale, 1f));
                         })
                         .KeepAlive()
@@ -278,17 +263,17 @@ namespace TUA.UI
 
         public void ToggleVisible()
         {
-            if (_overlay == null)
+            if (Overlay == null)
             {
                 return;
             }
-            bool isVisible = IsVisible;
+            var isVisible = IsVisible;
             if (isVisible)
                 Close();
             else
             {
                 var manager = WindowManager.FindInScene();
-                if (manager != null)
+                if (manager)
                     manager.OpenWindow(this);
                 else
                     SetVisible(true);
@@ -299,24 +284,18 @@ namespace TUA.UI
         {
             Close();
         }
-
-        public override void Close()
-        {
-            
-            base.Close();
-        }
-
+        
         private void _ApplyFallbackLayoutStyles()
         {
-            if (_overlay == null) return;
+            if (Overlay == null) return;
 
-            _overlay.style.position = Position.Absolute;
-            _overlay.style.left = 0;
-            _overlay.style.right = 0;
-            _overlay.style.top = 0;
-            _overlay.style.bottom = 0;
-            _overlay.style.justifyContent = Justify.Center;
-            _overlay.style.alignItems = Align.Center;
+            Overlay.style.position = Position.Absolute;
+            Overlay.style.left = 0;
+            Overlay.style.right = 0;
+            Overlay.style.top = 0;
+            Overlay.style.bottom = 0;
+            Overlay.style.justifyContent = Justify.Center;
+            Overlay.style.alignItems = Align.Center;
         }
 
         private void _BuildTabs()
@@ -326,13 +305,11 @@ namespace TUA.UI
             _tabs.Clear();
             _tabButtons.Clear();
 
-            for (int i = 0; i < _pages.Count; i++)
+            for (var i = 0; i < pages.Count; i++)
             {
-                var page = _pages[i];
-                int pageIndex = i;
-
-                
-                string displayName = _GetLocalized(page.UnlocalizedName, "settings." + page.UnlocalizedName.ToLowerInvariant());
+                var page = pages[i];
+                var pageIndex = i;
+                var displayName = LocalizationManager.Get("settings." + page.UnlocalizedName.ToLowerInvariant());
 
                 var btn = new Button(() => _ShowPage(pageIndex))
                 {
@@ -346,30 +323,28 @@ namespace TUA.UI
 
         private void _ShowPage(int index)
         {
-            if (_pages == null || _pages.Count == 0) return;
-            index = Mathf.Clamp(index, 0, _pages.Count - 1);
+            if (pages == null || pages.Count == 0) 
+                return;
+            
+            index = Mathf.Clamp(index, 0, pages.Count - 1);
 
-            var page = _pages[index];
-            if (page == null) return;
+            var page = pages[index];
+            if (!page) 
+                return;
 
-            if (_activePage != null)
+            if (_activePage)
                 _activePage.OnAnyChangeEvent -= _OnSettingChanged;
 
             _activePage = page;
             _activePage.OnAnyChangeEvent += _OnSettingChanged;
 
             _activeBindings.Clear();
-            if (_list != null) _list.Clear();
+            _list?.Clear();
 
             if (_title != null)
-            {
-                
-                string key = "settings.title";
-                _title.text = _GetLocalized("Settings", key);
-            }
-
+                _title.text = LocalizationManager.Get("settings.title");
             
-            for (int i = 0; i < _tabButtons.Count; i++)
+            for (var i = 0; i < _tabButtons.Count; i++)
             {
                 var b = _tabButtons[i];
                 if (b == null) continue;
@@ -378,9 +353,8 @@ namespace TUA.UI
             }
 
             var entries = page.Entries;
-            for (int i = 0; i < entries.Count; i++)
+            foreach (var entry in entries)
             {
-                var entry = entries[i];
                 if (entry == null) continue;
                 if (!entry.Visible) continue;
 
@@ -401,50 +375,39 @@ namespace TUA.UI
                     case SettingType.String:
                         _AddString(page, entry);
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
         }
 
         private void _OnLanguageChanged()
         {
-            
-            if (_activePage != null)
+            if (_activePage)
             {
-                
-                int index = _pages.IndexOf(_activePage);
+                var index = pages.IndexOf(_activePage);
                 _BuildTabs(); 
                 _ShowPage(index); 
             }
             else
-            {
                 _BuildTabs();
-            }
         }
-
-        private string _GetLocalized(string defaultText, string key)
-        {
-            if (string.IsNullOrEmpty(key))
-                return "";
-            
-            return LocalizationManager.Get(key);
-        }
-
+        
         private string _GetLabelText(SettingsAsset page, SettingEntry entry)
         {
+            var pageName = page == null ? page.UnlocalizedName.ToLowerInvariant() : "unknown";
+            var key = !string.IsNullOrEmpty(entry?.Key) ? entry.Key.ToLowerInvariant() : "";
             
-            string pageName = page != null ? page.UnlocalizedName.ToLowerInvariant() : "unknown";
-            string key = !string.IsNullOrEmpty(entry?.Key) ? entry.Key.ToLowerInvariant() : "";
-            
-            
-            string fullKey = $"settings.{pageName}.{key}";
+            var fullKey = $"settings.{pageName}.{key}";
             return LocalizationManager.Get(fullKey);
         }
 
         private void _AddLabel(SettingsAsset page, SettingEntry entry)
         {
-            if (_labelWidget == null || _list == null) return;
+            if (!labelWidget || _list == null) 
+                return;
 
-            var ve = _labelWidget.Instantiate();
+            var ve = labelWidget.Instantiate();
             var root = ve.Q<VisualElement>("Root") ?? ve;
             root.style.width = Length.Percent(100);
             var text = ve.Q<Label>("Text");
@@ -454,9 +417,10 @@ namespace TUA.UI
 
         private void _AddBool(SettingsAsset page, SettingEntry entry)
         {
-            if (_boolWidget == null || _list == null || !entry.IsKeyed) return;
+            if (!boolWidget || _list == null || !entry.IsKeyed) 
+                return;
 
-            var ve = _boolWidget.Instantiate();
+            var ve = boolWidget.Instantiate();
             var root = ve.Q<VisualElement>("Root") ?? ve;
             root.style.width = Length.Percent(100);
             var label = ve.Q<Label>("Label");
@@ -465,7 +429,7 @@ namespace TUA.UI
             if (label != null) label.text = _GetLabelText(page, entry);
             if (toggle != null)
             {
-                bool value = page.GetBool(entry.Key, entry.DefaultBool);
+                var value = page.GetBool(entry.Key, entry.DefaultBool);
                 toggle.SetValueWithoutNotify(value);
 
                 toggle.RegisterValueChangedCallback(evt =>
@@ -475,7 +439,7 @@ namespace TUA.UI
                 });
             }
 
-            _Bind(entry.Key, change =>
+            _Bind(entry.Key, _ =>
             {
                 if (toggle == null) return;
                 toggle.SetValueWithoutNotify(page.GetBool(entry.Key, entry.DefaultBool));
@@ -486,18 +450,20 @@ namespace TUA.UI
 
         private void _AddInt(SettingsAsset page, SettingEntry entry)
         {
-            if (_intWidget == null || _list == null || !entry.IsKeyed) return;
+            if (!intWidget || _list == null || !entry.IsKeyed) 
+                return;
 
-            var ve = _intWidget.Instantiate();
+            var ve = intWidget.Instantiate();
             var root = ve.Q<VisualElement>("Root") ?? ve;
             root.style.width = Length.Percent(100);
             var label = ve.Q<Label>("Label");
             var slider = ve.Q<SliderInt>("Slider");
             var field = ve.Q<IntegerField>("Field");
 
-            if (label != null) label.text = _GetLabelText(page, entry);
+            if (label != null) 
+                label.text = _GetLabelText(page, entry);
 
-            bool hasClamp = entry.IntClamp;
+            var hasClamp = entry.IntClamp;
             if (slider != null)
             {
                 slider.style.display = hasClamp ? DisplayStyle.Flex : DisplayStyle.None;
@@ -514,31 +480,28 @@ namespace TUA.UI
                 slider?.SetValueWithoutNotify(v);
             }
 
-            int value = page.GetInt(entry.Key, entry.DefaultInt);
+            var value = page.GetInt(entry.Key, entry.DefaultInt);
             SetUI(value);
 
-            int step = Mathf.Max(1, entry.IntStep);
-            int baseValue = hasClamp ? entry.IntMin : 0;
+            var step = Mathf.Max(1, entry.IntStep);
+            var baseValue = hasClamp ? entry.IntMin : 0;
 
-            if (slider != null)
+            slider?.RegisterValueChangedCallback(evt =>
             {
-                slider.RegisterValueChangedCallback(evt =>
-                {
-                    int v = evt.newValue;
-                    if (step > 1)
-                        v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
-                    page.SetInt(entry.Key, v);
-                    entry.Provider?.ApplyValue(SettingValue.FromInt(v));
-                    // Update field to keep in sync
-                    field?.SetValueWithoutNotify(v);
-                });
-            }
+                var v = evt.newValue;
+                if (step > 1)
+                    v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
+                page.SetInt(entry.Key, v);
+                entry.Provider?.ApplyValue(SettingValue.FromInt(v));
+                // Update field to keep in sync
+                field?.SetValueWithoutNotify(v);
+            });
 
             if (field != null)
             {
                 field.RegisterValueChangedCallback(evt =>
                 {
-                    int v = evt.newValue;
+                    var v = evt.newValue;
                     if (step > 1)
                         v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
                     page.SetInt(entry.Key, v);
@@ -548,7 +511,7 @@ namespace TUA.UI
                 });
             }
 
-            _Bind(entry.Key, change =>
+            _Bind(entry.Key, _ =>
             {
                 SetUI(page.GetInt(entry.Key, entry.DefaultInt));
             });
@@ -558,18 +521,20 @@ namespace TUA.UI
 
         private void _AddFloat(SettingsAsset page, SettingEntry entry)
         {
-            if (_floatWidget == null || _list == null || !entry.IsKeyed) return;
+            if (!floatWidget || _list == null || !entry.IsKeyed) 
+                return;
 
-            var ve = _floatWidget.Instantiate();
+            var ve = floatWidget.Instantiate();
             var root = ve.Q<VisualElement>("Root") ?? ve;
             root.style.width = Length.Percent(100);
             var label = ve.Q<Label>("Label");
             var slider = ve.Q<Slider>("Slider");
             var field = ve.Q<FloatField>("Field");
 
-            if (label != null) label.text = _GetLabelText(page, entry);
+            if (label != null) 
+                label.text = _GetLabelText(page, entry);
 
-            bool hasClamp = entry.FloatClamp;
+            var hasClamp = entry.FloatClamp;
             if (slider != null)
             {
                 slider.style.display = hasClamp ? DisplayStyle.Flex : DisplayStyle.None;
@@ -586,11 +551,11 @@ namespace TUA.UI
                 slider?.SetValueWithoutNotify(v);
             }
 
-            float value = page.GetFloat(entry.Key, entry.DefaultFloat);
+            var value = page.GetFloat(entry.Key, entry.DefaultFloat);
             SetUI(value);
 
-            float step = Mathf.Max(0f, entry.FloatStep);
-            float baseValue = hasClamp ? entry.FloatMin : 0f;
+            var step = Mathf.Max(0f, entry.FloatStep);
+            var baseValue = hasClamp ? entry.FloatMin : 0f;
 
             float Snap(float v)
             {
@@ -598,31 +563,23 @@ namespace TUA.UI
                 return baseValue + Mathf.Round((v - baseValue) / step) * step;
             }
 
-            if (slider != null)
+            slider?.RegisterValueChangedCallback(evt =>
             {
-                slider.RegisterValueChangedCallback(evt =>
-                {
-                    float v = Snap(evt.newValue);
-                    page.SetFloat(entry.Key, v);
-                    entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
-                    // Update field to keep in sync
-                    field?.SetValueWithoutNotify(v);
-                });
-            }
+                var v = Snap(evt.newValue);
+                page.SetFloat(entry.Key, v);
+                entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
+                field?.SetValueWithoutNotify(v);
+            });
 
-            if (field != null)
+            field?.RegisterValueChangedCallback(evt =>
             {
-                field.RegisterValueChangedCallback(evt =>
-                {
-                    float v = Snap(evt.newValue);
-                    page.SetFloat(entry.Key, v);
-                    entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
-                    // Update slider to keep in sync
-                    slider?.SetValueWithoutNotify(v);
-                });
-            }
+                var v = Snap(evt.newValue);
+                page.SetFloat(entry.Key, v);
+                entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
+                slider?.SetValueWithoutNotify(v);
+            });
 
-            _Bind(entry.Key, change =>
+            _Bind(entry.Key, _ =>
             {
                 SetUI(page.GetFloat(entry.Key, entry.DefaultFloat));
             });
@@ -632,37 +589,36 @@ namespace TUA.UI
 
         private void _AddString(SettingsAsset page, SettingEntry entry)
         {
-            if (_stringWidget == null || _list == null || !entry.IsKeyed) return;
+            if (!stringWidget || _list == null || !entry.IsKeyed) 
+                return;
 
-            var ve = _stringWidget.Instantiate();
+            var ve = stringWidget.Instantiate();
             var root = ve.Q<VisualElement>("Root") ?? ve;
             root.style.width = Length.Percent(100);
             var label = ve.Q<Label>("Label");
             var dropdown = ve.Q<DropdownField>("Dropdown");
             var textField = ve.Q<TextField>("TextField");
 
-            if (label != null) label.text = _GetLabelText(page, entry);
+            if (label != null) 
+                label.text = _GetLabelText(page, entry);
 
-            string value = page.GetString(entry.Key, entry.DefaultString);
-            string[] options = entry.StringOptions;
-
+            var value = page.GetString(entry.Key, entry.DefaultString);
+            var options = entry.StringOptions;
             
-            if (entry.Provider != null)
+            if (entry.Provider)
             {
                 var dynamicOpts = entry.Provider.GetStringOptions(page, entry);
                 if (dynamicOpts != null && dynamicOpts.Length > 0)
                     options = dynamicOpts;
             }
 
-            bool hasOptions = options != null && options.Length > 0;
-
+            var hasOptions = options != null && options.Length > 0;
             if (dropdown != null)
             {
                 dropdown.style.display = hasOptions ? DisplayStyle.Flex : DisplayStyle.None;
                 if (hasOptions)
                 {
                     dropdown.choices = new List<string>(options);
-                    
                     
                     if (!dropdown.choices.Contains(value) && dropdown.choices.Count > 0)
                         value = dropdown.choices[0];
@@ -691,13 +647,12 @@ namespace TUA.UI
                 }
             }
 
-            _Bind(entry.Key, change =>
+            _Bind(entry.Key, _ =>
             {
-                string newVal = page.GetString(entry.Key, entry.DefaultString);
+                var newVal = page.GetString(entry.Key, entry.DefaultString);
                 dropdown?.SetValueWithoutNotify(newVal);
                 textField?.SetValueWithoutNotify(newVal);
             });
-
             _list.Add(root);
         }
 

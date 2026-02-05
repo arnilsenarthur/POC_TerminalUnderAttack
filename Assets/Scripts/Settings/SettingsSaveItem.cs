@@ -28,14 +28,14 @@ namespace TUA.Settings
 
         public SettingValue ToValue()
         {
-            switch (type)
+            return type switch
             {
-                case SettingType.Int: return SettingValue.FromInt(intValue);
-                case SettingType.Float: return SettingValue.FromFloat(floatValue);
-                case SettingType.Bool: return SettingValue.FromBool(boolValue);
-                case SettingType.String: return SettingValue.FromString(stringValue);
-                default: return default;
-            }
+                SettingType.Int => SettingValue.FromInt(intValue),
+                SettingType.Float => SettingValue.FromFloat(floatValue),
+                SettingType.Bool => SettingValue.FromBool(boolValue),
+                SettingType.String => SettingValue.FromString(stringValue),
+                _ => default
+            };
         }
     }
 }

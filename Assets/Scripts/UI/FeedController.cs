@@ -14,19 +14,22 @@ namespace TUA.UI
     public class FeedController : SingletonBehaviour<FeedController>
     {
         #region Constants
-        private const int MAX_FEED_ITEMS = 10;
+        private const int MaxFeedItems = 10;
         #endregion
+        
         #region Serialized Fields
         [Header("UI References")]
         public UIDocument uiDocument;
         [Header("Templates")]
         public VisualTreeAsset feedItemTemplate;
         #endregion
+        
         #region Fields
         private VisualElement _root;
         private VisualElement _feedContainer;
-        private Queue<VisualElement> _activeFeedItems = new Queue<VisualElement>();
+        private readonly Queue<VisualElement> _activeFeedItems = new();
         #endregion
+        
         #region Unity Callbacks
         protected override void OnEnable()
         {
@@ -42,6 +45,7 @@ namespace TUA.UI
             FeedSystem.OnFeedLocalizedItemAddEvent -= _OnFeedLocalizedItemAdded;
         }
         #endregion
+        
         #region Methods
         private void _InitializeUI()
         {
@@ -68,22 +72,25 @@ namespace TUA.UI
             foreach (var item in existingItems)
                 item.RemoveFromHierarchy();
         }
-        private void _OnFeedLocalizedItemAdded(string key, string[] args, float duration)
+        
+        private void _OnFeedLocalizedItemAdded(string key, object[] args, float duration)
         {
-            string message = (args != null && args.Length > 0)
+            var message = (args != null && args.Length > 0)
                 ? LocalizationManager.Get(key, args)
                 : LocalizationManager.Get(key);
+            
             _OnFeedItemAdded(message, duration);
         }
+        
         private void _OnFeedItemAdded(string message, float duration)
         {
             if (_feedContainer == null || feedItemTemplate == null)
                 return;
+            
             var feedItemElement = feedItemTemplate.Instantiate();
-            var feedItem = feedItemElement.Q<VisualElement>("FeedItem");
-            if (feedItem == null)
-                feedItem = feedItemElement;
+            var feedItem = feedItemElement.Q<VisualElement>("FeedItem") ?? feedItemElement;
             var messageLabel = feedItem.Q<Label>("FeedMessage");
+            
             if (messageLabel != null)
             {
                 messageLabel.enableRichText = true;
@@ -98,23 +105,29 @@ namespace TUA.UI
                     label.text = message;
                 }
             }
+            
             _feedContainer.Add(feedItem);
             _activeFeedItems.Enqueue(feedItem);
-            if (_activeFeedItems.Count > MAX_FEED_ITEMS)
+            
+            if (_activeFeedItems.Count > MaxFeedItems)
             {
                 var oldestItem = _activeFeedItems.Dequeue();
                 if (oldestItem != null && oldestItem.parent != null)
                     oldestItem.RemoveFromHierarchy();
             }
+            
             StartCoroutine(_RemoveFeedItemAfterDelay(feedItem, duration));
         }
         private IEnumerator _RemoveFeedItemAfterDelay(VisualElement feedItem, float duration)
         {
             yield return new WaitForSeconds(duration);
-            if (feedItem != null && feedItem.parent != null)
+            
+            if (feedItem is { parent: not null })
                 feedItem.RemoveFromHierarchy();
+            
             var queueArray = _activeFeedItems.ToArray();
             _activeFeedItems.Clear();
+            
             foreach (var item in queueArray)
             {
                 if (item != null && item.parent != null)

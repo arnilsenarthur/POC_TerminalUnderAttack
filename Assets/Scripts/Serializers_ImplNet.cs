@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace TUA
 {
-    public static class TUA_Serializers
+    public static class TuaSerializers
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Register()
@@ -43,12 +43,9 @@ namespace TUA
             {
                 writer.WriteString(stack.item ?? string.Empty);
             });
-            RegisterReadHandler("itemstack", (reader) =>
+            RegisterReadHandler("itemstack", (reader) => new ItemStack
             {
-                return new ItemStack
-                {
-                    item = reader.ReadStringAllocated() ?? string.Empty
-                };
+                item = reader.ReadStringAllocated() ?? string.Empty
             });
 
             RegisterWriteHandler("weapon", (writer, stack) =>
@@ -121,112 +118,108 @@ namespace TUA
         #endregion
 
         #region Inventory & ItemStack
-        private static readonly Dictionary<string, Action<Writer, ItemStack>> _writeHandlers = new Dictionary<string, Action<Writer, ItemStack>>();
-        private static readonly Dictionary<string, Func<Reader, ItemStack>> _readHandlers = new Dictionary<string, Func<Reader, ItemStack>>();
+        private static readonly Dictionary<string, Action<Writer, ItemStack>> WriteHandlers = new();
+        private static readonly Dictionary<string, Func<Reader, ItemStack>> ReadHandlers = new();
 
         public static void RegisterWriteHandler(string id, Action<Writer, ItemStack> handler)
         {
-            _writeHandlers[id] = handler;
+            WriteHandlers[id] = handler;
         }
 
         public static void RegisterReadHandler(string id, Func<Reader, ItemStack> handler)
         {
-            _readHandlers[id] = handler;
+            ReadHandlers[id] = handler;
         }
 
         private static void WriteInventory(Writer writer, Inventory value)
         {
-            bool hasValue = value != null;
+            var hasValue = value != null;
             writer.WriteBoolean(hasValue);
+            
             if (!hasValue)
                 return;
+            
             writer.WriteInt32(value.selectedSlot);
             writer.WriteInt32(value.slots?.Length ?? 0);
-            if (value.slots != null)
-            {
-                for (int i = 0; i < value.slots.Length; i++)
-                {
-                    WriteItemStack(writer, value.slots[i]);
-                }
-            }
+            
+            if (value.slots == null) 
+                return;
+            
+            foreach (var t in value.slots)
+                WriteItemStack(writer, t);
         }
 
         private static Inventory ReadInventory(Reader reader)
         {
-            bool hasValue = reader.ReadBoolean();
+            var hasValue = reader.ReadBoolean();
+            
             if (!hasValue)
                 return null;
-            int selectedSlot = reader.ReadInt32();
-            int slotCount = reader.ReadInt32();
+            
+            var selectedSlot = reader.ReadInt32();
+            var slotCount = reader.ReadInt32();
             var inventory = new Inventory(slotCount)
             {
                 selectedSlot = selectedSlot
             };
-            for (int i = 0; i < slotCount; i++)
-            {
+            
+            for (var i = 0; i < slotCount; i++)
                 inventory.slots[i] = ReadItemStack(reader);
-            }
+            
             return inventory;
         }
 
         private static void WriteItemStack(Writer writer, ItemStack value)
         {
-            bool hasValue = value != null;
+            var hasValue = value != null;
             writer.WriteBoolean(hasValue);
+            
             if (!hasValue)
                 return;
 
-            string typeId = ItemStackTypeRegistry.GetTypeId(value);
+            var typeId = ItemStackTypeRegistry.GetTypeId(value);
             if (string.IsNullOrWhiteSpace(typeId))
-            {
                 typeId = "itemstack";
-            }
 
             writer.WriteString(typeId);
 
-            if (_writeHandlers.TryGetValue(typeId, out Action<Writer, ItemStack> handler))
-            {
+            if (WriteHandlers.TryGetValue(typeId, out Action<Writer, ItemStack> handler))
                 handler(writer, value);
-            }
             else
-            {
                 writer.WriteString(value.item ?? string.Empty);
-            }
         }
 
         private static ItemStack ReadItemStack(Reader reader)
         {
-            bool hasValue = reader.ReadBoolean();
+            var hasValue = reader.ReadBoolean();
+            
             if (!hasValue)
                 return null;
 
-            string typeId = reader.ReadStringAllocated();
+            var typeId = reader.ReadStringAllocated();
+            
             if (string.IsNullOrWhiteSpace(typeId))
-            {
                 return null;
-            }
 
-            if (_readHandlers.TryGetValue(typeId, out Func<Reader, ItemStack> handler))
-            {
+            if (ReadHandlers.TryGetValue(typeId, out Func<Reader, ItemStack> handler))
                 return handler(reader);
-            }
-
-            // Fallback
+            
             var type = ItemStackTypeRegistry.GetType(typeId);
-            if (type != null)
-            {
-                var stack = ItemStackTypeRegistry.CreateInstance(typeId);
-                if (stack != null)
+            if (type == null)
+                return new ItemStack
                 {
-                    stack.item = reader.ReadStringAllocated() ?? string.Empty;
-                    return stack;
-                }
-            }
-
-            return new ItemStack
-            {
-                item = reader.ReadStringAllocated() ?? string.Empty
-            };
+                    item = reader.ReadStringAllocated() ?? string.Empty
+                };
+            
+            var stack = ItemStackTypeRegistry.CreateInstance(typeId);
+            if (stack == null)
+                return new ItemStack
+                {
+                    item = reader.ReadStringAllocated() ?? string.Empty
+                };
+            
+            stack.item = reader.ReadStringAllocated() ?? string.Empty;
+            return stack;
         }
 
         private static void WriteWeaponItemStack(Writer writer, WeaponItemStack value)
