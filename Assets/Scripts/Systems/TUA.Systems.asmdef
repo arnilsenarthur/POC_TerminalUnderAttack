@@ -1,0 +1,21 @@
+{
+    "name": "TUA.Systems",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9320036f03442dd40bd674b01959a5f4",
+        "GUID:d2852416ad03c764eba42dc25e13e699",
+        "GUID:713e50f8c6fe80a40a2e6688be635a4e",
+        "GUID:496a9c798ff19564a885c6f718c5d15f",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67",
+        "GUID:204de49144e31d5488a693686de35f66"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

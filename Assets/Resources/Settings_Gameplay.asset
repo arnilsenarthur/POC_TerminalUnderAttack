@@ -1,0 +1,193 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd7f8288a03f8ad4f8ad68a49c001d2d, type: 3}
+  m_Name: Settings_Gameplay
+  m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Settings.SettingsAsset
+  unlocalizedName: gameplay
+  fileName: settings_gameplay
+  autoLoadOnEnable: 1
+  autoSaveOnChange: 1
+  entries:
+  - visible: 1
+    type: 0
+    key: camera
+    defaultInt: 0
+    defaultFloat: 0
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 2
+    key: camera.sensitivity_x
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 1
+    floatMin: 0.001
+    floatMax: 5
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 4
+    key: camera.inverted_x
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 1
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 2
+    key: camera.sensitivity_y
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 1
+    floatMin: 0.001
+    floatMax: 5
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 4
+    key: camera.inverted_y
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 0
+    key: test
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 1
+    key: x
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 2
+    key: y
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 3
+    key: z
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: test
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions:
+    - option
+    - two
+    - three
+    - four
+    provider: {fileID: 0}
+  - visible: 1
+    type: 4
+    key: w
+    defaultInt: 0
+    defaultFloat: 1
+    defaultBool: 0
+    defaultString: 
+    intClamp: 0
+    intMin: 0
+    intMax: 100
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}

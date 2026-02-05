@@ -1,0 +1,97 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="InventorySlot" src="project://database/Assets/FINAL/Interface/Widgets/InventorySlot.uxml?fileID=9197481963319205126&amp;guid=aea6167659e2baf41bc2980c74770e6b&amp;type=3#InventorySlot"/>
+    <Style src="project://database/Assets/FINAL/Interface/TUAStyles.uss?fileID=7433441132597879392&amp;guid=b0d8e5f3a4b7c3d1e2f9a1b6c7d8e9f0&amp;type=3#TUAStyles"/>
+    <ui:VisualElement name="HUDContainer" class="hud-root tua-root">
+        <ui:VisualElement name="TopRow" class="hud-row top-row">
+            <ui:VisualElement name="MinimapArea" class="minimap-container">
+                <ui:VisualElement name="Minimap" class="minimap-circle tua-panel">
+                    <ui:Label text="MAP" style="color: rgba(255, 255, 255, 0.3); font-size: 20px; -unity-text-align: middle-center; height: 100%;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="KillFeed" class="kill-feed">
+                <ui:Label text="Player1 killed Player2" class="feed-item tua-panel--soft"/>
+                <ui:Label text="Player3 killed Player4" class="feed-item tua-panel--soft"/>
+                <ui:Label text="Player5 killed Player6" class="feed-item tua-panel--soft"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="MatchDisplayContainer" class="match-display-container">
+            <ui:VisualElement name="MatchInfo" class="match-info-section tua-panel">
+                <ui:Label name="RoundText" text="ROUND 23" class="round-text"/>
+                <ui:Label name="TimerText" text="0:42" class="timer-text"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="TeamsList" class="teams-list tua-frame">
+                <ui:VisualElement name="Team1" class="team-row">
+                    <ui:VisualElement name="Team1Players" class="team-players">
+                        <ui:VisualElement class="player-square" style="background-color: rgb(0, 120, 255);"/>
+                        <ui:VisualElement class="player-square" style="background-color: rgb(0, 120, 255);"/>
+                        <ui:VisualElement class="player-square" style="background-color: rgb(0, 120, 255);"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="Team2" class="team-row">
+                    <ui:VisualElement name="Team2Players" class="team-players">
+                        <ui:VisualElement class="player-square" style="background-color: rgb(220, 50, 50);"/>
+                        <ui:VisualElement class="player-square" style="background-color: rgb(220, 50, 50);"/>
+                        <ui:VisualElement class="player-square" style="background-color: rgb(220, 50, 50);"/>
+                        <ui:VisualElement class="player-square" style="background-color: rgb(220, 50, 50);"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="HackingTargetsRow" class="team-row">
+                <ui:VisualElement name="HackingTargetsContainer" class="team-players"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Crosshair" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; align-items: center; justify-content: center; pick-mode: Ignore;">
+            <ui:VisualElement style="width: 4px; height: 4px; background-color: white;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="BottomRow" class="hud-row bottom-row">
+            <ui:VisualElement name="LifeDisplay" class="info-display tua-panel--soft">
+                <ui:VisualElement name="HealthTopRow" class="info-top-row">
+                    <ui:VisualElement name="HealthBadge" class="info-badge tua-panel--strong">
+                        <ui:Label text="+" class="health-icon-label"/>
+                    </ui:VisualElement>
+                    <ui:Label name="HealthText" text="100" class="info-main-text"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="HealthBarContainer" class="health-bar-dashed">
+                    <ui:VisualElement name="Segment1" class="health-segment">
+                        <ui:VisualElement name="Fill" class="health-segment-fill"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="Segment2" class="health-segment">
+                        <ui:VisualElement name="Fill" class="health-segment-fill"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="Segment3" class="health-segment">
+                        <ui:VisualElement name="Fill" class="health-segment-fill"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="Segment4" class="health-segment">
+                        <ui:VisualElement name="Fill" class="health-segment-fill"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="Segment5" class="health-segment">
+                        <ui:VisualElement name="Fill" class="health-segment-fill"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="InventoryContainer" class="inventory-container">
+                <ui:VisualElement name="ReloadProgressBar" class="reload-progress-bar" style="display: none;">
+                    <ui:VisualElement name="ReloadProgressFill" class="reload-progress-fill"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="InventoryDisplay" class="inventory-display tua-panel--soft"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="ItemInfo" class="info-display tua-panel--soft">
+                <ui:VisualElement name="WeaponInfoLayout" class="info-content" style="opacity: 1; display: flex;">
+                    <ui:Label name="AmmoCount" text="30 / 90" class="info-main-text"/>
+                    <ui:Label name="ItemName" text="ASSAULT RIFLE" class="info-sub-text"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="HackerToolInfoLayout" class="info-content" style="display: none;">
+                    <ui:VisualElement name="HackingProgressBar" class="hacking-progress-bar">
+                        <ui:VisualElement name="HackingProgressFill" class="hacking-progress-fill"/>
+                    </ui:VisualElement>
+                    <ui:Label name="HackingProgressLabel" text="HACKING PROGRESS" class="info-sub-text"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="SpectatorMenu" class="spectator-menu tua-panel--soft">
+            <ui:Button name="SpectatorPrev" text="‹" class="tua-button tua-button--icon" />
+            <ui:Label name="SpectatorName" text="SPECTATING: PLAYER" class="spectator-name"/>
+            <ui:Button name="SpectatorNext" text="›" class="tua-button tua-button--icon" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

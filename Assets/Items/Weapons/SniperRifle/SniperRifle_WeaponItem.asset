@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
+  m_Name: SniperRifle_WeaponItem
+  m_EditorClassIdentifier: TUA.Items::TUA.Items.WeaponItem
+  _id: weapon.sniper_rifle
+  sprite: {fileID: 21300000, guid: 8700980f54914594e9b9f8b48a067d0c, type: 3}
+  visualPrefab: {fileID: 7321597247831678145, guid: bd3421f89d4e3e948a10082f76fb90ff, type: 3}
+  aimable: 1
+  hasScope: 1
+  scopeTargetPosition: {x: 0, y: -0.0925, z: 0.05}
+  scopeFOV: 25
+  spreadAngleWhenScoping: 0.1
+  recoilMultiplierWhenScoping: 0.5
+  damage: 70
+  range: 120
+  fireRate: 1.4
+  automatic: 0
+  headshotDamageMultiplier: 2
+  defaultAmmo: 5
+  maxAmmo: 5
+  magazineSize: 5
+  reloadTime: 3.5
+  reloadClipName: Reloading
+  reloadClipLength: 2.067
+  shotSoundKey: weapon_sniper_rifle_shot
+  reloadSoundKey: weapon_sniper_rifle_reload
+  firingErrorMultiplier: 0.15
+  projectileCount: 1
+  spreadAngle: 12
+  recoilVertical: 12
+  recoilHorizontal: 6
+  recoilKickback: 0.25
+  maxKickback: 0.15
+  recoilRecoverySpeed: 5
+  maxRecoil: 10
+  recoilSpreadMultiplier: 1.5

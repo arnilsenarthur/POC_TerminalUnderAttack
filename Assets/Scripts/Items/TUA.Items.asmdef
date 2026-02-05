@@ -1,0 +1,18 @@
+{
+    "name": "TUA.Items",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9320036f03442dd40bd674b01959a5f4",
+        "GUID:496a9c798ff19564a885c6f718c5d15f",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

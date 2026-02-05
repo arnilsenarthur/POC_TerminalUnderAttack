@@ -1,0 +1,16 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="SlotContainer" class="inventory-slot">
+        <!-- Frame is the "slot border" and provides padding between border and image -->
+        <ui:VisualElement name="IconFrame" class="inventory-slot-frame">
+            <!-- Icon is the image area (triangle overlays should be inside THIS element) -->
+            <ui:VisualElement name="Icon" class="inventory-slot-icon">
+                <!-- Separate image element so overlays can always be above it -->
+                <ui:VisualElement name="IconImage" class="inventory-slot-image" picking-mode="Ignore" />
+            </ui:VisualElement>
+
+            <!-- Slot corner overlay (anchored to the framed/bordered element) -->
+            <ui:VisualElement name="CornerTriangle" class="corner-triangle" picking-mode="Ignore" />
+            <ui:Label name="SlotNumber" class="slot-number" text="1" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

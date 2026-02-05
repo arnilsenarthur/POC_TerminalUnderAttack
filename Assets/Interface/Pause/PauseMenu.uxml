@@ -1,0 +1,28 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:ui="UnityEngine.UIElements"
+         noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+         editor-extension-mode="False">
+    <Style src="project://database/Assets/FINAL/Interface/TUAStyles.uss?fileID=7433441132597879392&amp;guid=b0d8e5f3a4b7c3d1e2f9a1b6c7d8e9f0&amp;type=3#TUAStyles" />
+    <ui:VisualElement name="PauseOverlay" class="tua-modal tua-root" picking-mode="Position">
+        <ui:VisualElement name="Backdrop" class="tua-modal__backdrop" picking-mode="Position">
+            <!-- Room Code Display (Top Right Corner of Screen) -->
+            <ui:VisualElement name="RoomCodeContainer" style="position: absolute; top: 10px; right: 10px; flex-direction: column; align-items: flex-end;">
+                <ui:Label name="RoomCodeLabel" text="Room Code:" style="color: rgba(255, 255, 255, 0.7); font-size: 12px; margin-bottom: 2px;" />
+                <ui:Label name="RoomCode" text="" style="color: rgb(255, 255, 255); font-size: 14px; -unity-font-style: bold;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="PausePanel" class="tua-modal__panel">
+            <ui:VisualElement name="Header" class="tua-modal__header">
+                <ui:Label name="Title" text="Pause" class="tua-text--title" />
+                <ui:Button name="CloseButton" text="×" class="tua-button tua-button--icon tua-close" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="ButtonsContainer" class="tua-pause-buttons">
+                <ui:Button name="SettingsButton" text="Settings" class="tua-button" />
+                <ui:Button name="LeaveMatchButton" text="Leave Match" class="tua-button tua-close" />
+                <ui:Button name="ResumeButton" text="Close" class="tua-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

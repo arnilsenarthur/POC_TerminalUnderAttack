@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c924e8b36f538ed45bcf76f88bf8425d, type: 3}
+  m_Name: Sounds_General
+  m_EditorClassIdentifier: TUA.Audio::TUA.Audio.SoundRegistry
+  _entries:
+  - _key: weapon_assault_rifle_reload
+    _clip: {fileID: 8300000, guid: 4eda27008b3d50d4ea66fad17f4e2c7c, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_assault_rifle_shot
+    _clip: {fileID: 8300000, guid: 3ea7b53d5d120ee4592b7861b2a4c412, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_deagle_reload
+    _clip: {fileID: 8300000, guid: 7a2cfbf5720750745b723bbc0fa65050, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_deagle_shot
+    _clip: {fileID: 8300000, guid: 8dc47cd1b6379ec4488e540553244a9f, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_pistol_reload
+    _clip: {fileID: 8300000, guid: 7a9f7d8af8c93cc44abbf2a5e84a2c55, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_pistol_shot
+    _clip: {fileID: 8300000, guid: d5aa2398918350947873c0e8ff4f9d46, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_shotgun_reload
+    _clip: {fileID: 8300000, guid: cec64ebf14d142a4b9c5560d6e893ca5, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_shotgun_shot
+    _clip: {fileID: 8300000, guid: 8a6810b16348ad447996b1c873d3c192, type: 3}
+    _defaultVolume: 0.5
+  - _key: weapon_smg_reload
+    _clip: {fileID: 8300000, guid: 1c53998b5be064d49b59631a1792af14, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_smg_shot
+    _clip: {fileID: 8300000, guid: 82a955775c86f8148a87b5257039023a, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_sniper_rifle_reload
+    _clip: {fileID: 8300000, guid: c994ddcee7d1c65429af2e126202b29c, type: 3}
+    _defaultVolume: 1
+  - _key: weapon_sniper_rifle_shot
+    _clip: {fileID: 8300000, guid: 882595f318337e74eb942dda8663eb03, type: 3}
+    _defaultVolume: 1

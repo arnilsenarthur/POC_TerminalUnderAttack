@@ -1,0 +1,24 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:ui="UnityEngine.UIElements"
+         noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+         editor-extension-mode="False">
+    <Style src="project://database/Assets/FINAL/Interface/TUAStyles.uss?fileID=7433441132597879392&amp;guid=b0d8e5f3a4b7c3d1e2f9a1b6c7d8e9f0&amp;type=3#TUAStyles" />
+    <ui:VisualElement name="SettingsOverlay" class="tua-modal tua-root" picking-mode="Position">
+        <ui:VisualElement name="Backdrop" class="tua-modal__backdrop" picking-mode="Position" />
+
+        <ui:VisualElement name="SettingsPanel" class="tua-modal__panel tua-modal__panel--lg tua-modal__panel--settings">
+            <ui:VisualElement name="Header" class="tua-modal__header">
+                <ui:Label name="Title" text="Settings" class="tua-text--title" />
+                <ui:Button name="CloseButton" text="×" class="tua-button tua-button--icon tua-close" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="TabsBar" class="tua-tabsbar">
+                <ui:VisualElement name="Tabs" class="tua-tabs" />
+            </ui:VisualElement>
+
+            <ui:ScrollView name="SettingsScroll" class="tua-scrollview" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible">
+                <ui:VisualElement name="SettingsList" class="tua-list" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

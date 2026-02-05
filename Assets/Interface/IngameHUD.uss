@@ -1,0 +1,371 @@
+.hud-root {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.hud-row {
+    flex-direction: row;
+    width: 100%;
+}
+
+.top-row {
+    justify-content: space-between;
+    align-items: flex-start;
+    height: 150px;
+    position: relative;
+}
+
+.bottom-row {
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 150px;
+}
+
+/* --- Top Left: Minimap --- */
+.minimap-container {
+    width: 150px;
+    height: 150px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-shrink: 0;
+}
+
+.minimap-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 70px; /* Keep circle for minimap */
+    background-color: rgba(0, 0, 0, 0.5);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+}
+
+/* --- Top Center: Match Display --- */
+.match-display-container {
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    translate: -50% 0;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: transparent;
+    padding: 0;
+    min-width: 220px;
+    max-width: 420px;
+}
+
+/* Match info block (top part) */
+.match-info-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 2px;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Teams list (supports many teams) */
+.teams-list {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0px;
+}
+
+.team-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 3px 12px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.round-text {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 2px;
+}
+
+.timer-text {
+    font-size: 18px;
+    color: rgb(255, 200, 0);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+}
+
+.team-players {
+    flex-direction: row;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    margin-top: 2px;
+}
+
+.player-square {
+    width: 22px;
+    height: 22px;
+    background-color: white;
+    margin-left: 2px;
+    margin-right: 2px;
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* --- Top Right: Kill Feed --- */
+.kill-feed {
+    width: 300px;
+    align-items: flex-end;
+    margin-top: 10px;
+    flex-shrink: 0;
+}
+
+.feed-item {
+    color: white;
+    font-size: 14px;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+}
+
+/* --- Unified Info Display Style (Health & Item) --- */
+.info-display {
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    min-width: 200px;
+}
+
+.info-top-row {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.info-badge {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.health-icon-label {
+    color: rgb(255, 255, 255);
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-badge-image {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgba(255, 255, 255, 1);
+}
+
+/* Allow item badge to have flexible width based on image aspect ratio */
+#ItemBadge {
+    width: auto;
+    min-width: 40px;
+    max-width: 100px;
+    margin-right: 0;
+    margin-bottom: 0;
+    align-self: center;
+}
+
+.info-content {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    margin: 0;
+}
+
+/* Center item display content */
+#ItemInfo {
+    align-items: center;
+}
+
+#ItemInfo .info-content {
+    align-items: center;
+    text-align: center;
+}
+
+#ItemInfo .info-main-text {
+    -unity-text-align: middle-center;
+}
+
+#ItemInfo .info-sub-text {
+    -unity-text-align: middle-center;
+}
+
+.info-main-text {
+    font-size: 32px;
+    color: white;
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 4px;
+}
+
+.info-sub-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.info-bar {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.info-bar-fill {
+    height: 100%;
+    background-color: rgb(50, 200, 50);
+}
+
+/* --- Dashed Health Bar --- */
+.health-bar-dashed {
+    flex-direction: row;
+    width: 100%;
+    height: 16px;
+}
+
+.health-segment {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin-right: 4px;
+    height: 100%;
+}
+
+.health-segment:last-child {
+    margin-right: 0;
+}
+
+.health-segment-fill {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(50, 200, 50);
+}
+
+.hacking-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin-bottom: 4px;
+}
+
+.hacking-progress-fill {
+    height: 100%;
+    background-color: rgb(0, 150, 255);
+    width: 0%;
+}
+
+/* --- Bottom Center: Inventory --- */
+.inventory-display {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+}
+
+.inventory-slot {
+    margin-right: 5px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inventory-slot-selected {
+    border-color: rgb(0, 150, 255);
+}
+
+.inventory-slot-selected .corner-triangle-selected {
+    border-bottom-color: rgb(0, 150, 255);
+}
+
+/* --- Bottom Center: Spectator Menu (absolute, above inventory) --- */
+.spectator-menu {
+    position: absolute;
+    left: 50%;
+    bottom: 115px;
+    translate: -50% 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 6px 10px;
+    min-width: 260px;
+}
+
+.spectator-btn {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.spectator-btn-text {
+    color: rgb(255, 255, 255);
+    font-size: 16px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+.spectator-name {
+    flex-grow: 1;
+    margin-left: 8px;
+    margin-right: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+/* --- Hacking Targets Row (styled like team rows but with circles) --- */
+.hacking-target-dot {
+    width: 22px;
+    height: 22px;
+    background-color: white;
+    margin-left: 2px;
+    margin-right: 2px;
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 11px; /* Makes it circular (half of width/height) */
+}

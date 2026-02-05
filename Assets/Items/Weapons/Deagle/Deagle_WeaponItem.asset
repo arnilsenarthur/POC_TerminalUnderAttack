@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
+  m_Name: Deagle_WeaponItem
+  m_EditorClassIdentifier: TUA.Items::TUA.Items.WeaponItem
+  _id: weapon.deagle
+  sprite: {fileID: 21300000, guid: 97dc24360d4314d448873d0ccfd9193a, type: 3}
+  visualPrefab: {fileID: 5563669767145436420, guid: 8de56bc8379a2ba40951c0b91288ead9, type: 3}
+  aimable: 1
+  hasScope: 0
+  scopeTargetPosition: {x: 0, y: -0.1, z: 0.5}
+  scopeFOV: 30
+  spreadAngleWhenScoping: 0.5
+  recoilMultiplierWhenScoping: 0.5
+  damage: 40
+  range: 45
+  fireRate: 0.45
+  automatic: 0
+  headshotDamageMultiplier: 2
+  defaultAmmo: 7
+  maxAmmo: 7
+  magazineSize: 7
+  reloadTime: 2
+  reloadClipName: Reloading
+  reloadClipLength: 2.067
+  shotSoundKey: weapon_deagle_shot
+  reloadSoundKey: weapon_deagle_reload
+  firingErrorMultiplier: 0.65
+  projectileCount: 1
+  spreadAngle: 0.6
+  recoilVertical: 8
+  recoilHorizontal: 1
+  recoilKickback: 0.05
+  maxKickback: 0.1
+  recoilRecoverySpeed: 5
+  maxRecoil: 10
+  recoilSpreadMultiplier: 1.5

@@ -1,0 +1,8 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:ui="UnityEngine.UIElements"
+         noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd"
+         editor-extension-mode="False">
+    <ui:VisualElement name="Root" class="tua-setting-row">
+        <ui:Label name="Text" text="LABEL" class="tua-setting-row__label" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,6 @@
+name=English
+
+# Feed / KillFeed
+feed.killed={0} killed {1}
+feed.hacked={0} hacked {1}
+feed.delivered_disk={0} delivered {1} disk

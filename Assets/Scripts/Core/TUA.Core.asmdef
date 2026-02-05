@@ -1,0 +1,18 @@
+{
+    "name": "TUA.Core",
+    "rootNamespace": "",
+    "references": [
+        "GUID:496a9c798ff19564a885c6f718c5d15f",
+        "GUID:55d5bfe30348f334b862ca99eebe67b0",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

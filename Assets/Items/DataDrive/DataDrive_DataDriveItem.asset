@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37bbaa6269bc7484e997e89eed7f4588, type: 3}
+  m_Name: DataDrive_DataDriveItem
+  m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Data.DataDriveItem
+  _id: misc.data_drive
+  sprite: {fileID: 21300000, guid: 4209a7de914df564682ed3dbb96fcacb, type: 3}
+  unlocalizedName: misc.data_drive
+  visualPrefab: {fileID: 3225269573313814190, guid: 0522cc2d17b2ecf4fb30ce7d94fb30b4, type: 3}

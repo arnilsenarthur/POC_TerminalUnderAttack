@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6b46e875e184fa45855eccb7061d180, type: 3}
+  m_Name: Items
+  m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Data.Registry
+  _entries:
+  - {fileID: 11400000, guid: c8076babbbf7730408d3ba28cdd3f05e, type: 2}
+  - {fileID: 11400000, guid: 98b8dfc36c53e9f47bf01f8f84c26970, type: 2}
+  - {fileID: 11400000, guid: 2f3334d8ae2edab4c95051bd9e08e9a2, type: 2}
+  - {fileID: 11400000, guid: 538eb38aed6f4374393bd015b36bb580, type: 2}
+  - {fileID: 11400000, guid: 130d015ebd4a3bb459a100f4df3ae0d1, type: 2}
+  - {fileID: 11400000, guid: c3348188c0b703f4ea1e35a11798324b, type: 2}
+  - {fileID: 11400000, guid: d84d68386c7b0c74bb7f88e7616234c7, type: 2}
+  - {fileID: 11400000, guid: 6817acfdc90e8604f8af7fde5cd3d239, type: 2}

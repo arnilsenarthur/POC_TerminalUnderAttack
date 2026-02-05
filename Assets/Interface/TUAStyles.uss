@@ -1,0 +1,997 @@
+/* ============================================
+   TUA Design System - Complete Rebuild
+   ============================================ */
+
+/* --- Design Tokens --- */
+/* Unified roundness - all elements use this */
+/* Base spacing - matches HUD padding */
+/* Colors */
+/* Typography */
+
+/* --- Root & Base --- */
+.tua-root {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Panels (Backgrounds) --- */
+.tua-panel {
+    background-color: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.tua-panel--soft {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.tua-panel--strong {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* --- Buttons --- */
+.tua-button {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-width: 0px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    min-width: 60px;
+    min-height: 32px;
+}
+
+.tua-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.tua-button:active {
+    background-color: rgba(0, 150, 255, 0.4);
+}
+
+.tua-button--icon {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0px;
+    width: 32px;
+    height: 32px;
+    font-size: 24px; /* Larger font for icons */
+    padding-bottom: 2px; /* Visual center fix */
+}
+
+.tua-close {
+    background-color: rgba(220, 50, 50, 0.6);
+}
+
+.tua-close:hover {
+    background-color: rgba(220, 50, 50, 0.8);
+}
+
+.tua-close:active {
+    background-color: rgba(180, 30, 30, 0.9);
+}
+
+/* --- Modal System --- */
+.tua-modal {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.tua-modal__backdrop {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    transition-duration: 0.3s;
+    transition-property: opacity;
+    opacity: 1;
+    /* Note: Unity UI Toolkit doesn't support backdrop-filter, so blur must be handled via shader/material if needed */
+}
+
+.tua-modal__panel {
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 500px;
+    max-width: 800px;
+    max-height: 90%; /* At least some space from top and bottom */
+    flex-direction: column;
+    align-items: stretch;
+    transition-duration: 0.3s;
+    transition-property: opacity;
+    opacity: 1;
+}
+
+/* Settings modal specific: Always 26px from top and bottom (height set programmatically) */
+.tua-modal__panel--settings {
+    position: absolute;
+    top: 26px;
+    bottom: 26px;
+    left: 50%;
+    margin-left: -300px; /* Half of typical 600px width to center */
+    width: 600px;
+}
+
+.tua-modal__panel--lg {
+    min-width: 600px;
+    max-width: 900px;
+}
+
+.tua-pause-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+}
+
+.tua-pause-buttons > * {
+    margin-bottom: 12px;
+}
+
+/* Removed :last-child - use margin-based spacing instead */
+
+.tua-modal__header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.tua-text--title {
+    font-size: 24px;
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    -unity-text-align: middle-left;
+    margin: 0px;
+    padding: 0px;
+}
+
+/* --- Tabs (Button-style headers) --- */
+.tua-tabsbar {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.tua-tabsbar > * {
+    margin-right: 8px;
+}
+
+/* Removed :last-child - use margin-based spacing instead */
+
+.tua-tabs {
+    flex-direction: row;
+}
+
+.tua-tabs > * {
+    margin-right: 8px;
+}
+
+/* Removed :last-child - use margin-based spacing instead */
+
+.tua-tab {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-width: 0px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-center;
+    min-height: 32px;
+}
+
+.tua-tab:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: rgb(255, 255, 255);
+}
+
+.tua-tab--active {
+    background-color: rgba(0, 150, 255, 0.4);
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+}
+
+.tua-tab--active:hover {
+    background-color: rgba(0, 150, 255, 0.5);
+}
+
+/* --- Scrollbar Styling (Shared with Sliders) --- */
+.tua-scrollview {
+    position: relative;
+    flex-grow: 1;
+    min-height: 0px;
+    width: 100%;
+}
+
+/* Force standard unity scrollbars to be hidden and let our custom ones take over, or style them directly */
+/* Hide the default buttons */
+.tua-scrollview .unity-scroller__low-button,
+.tua-scrollview .unity-scroller__high-button,
+.tua-scrollview #unity-low-button,
+.tua-scrollview #unity-high-button,
+.tua-scrollview .unity-scroller-button,
+.tua-scrollview .unity-scroller-button--up,
+.tua-scrollview .unity-scroller-button--down {
+    display: none;
+    height: 0px;
+    min-height: 0px;
+    max-height: 0px;
+    width: 0px;
+    min-width: 0px;
+    max-width: 0px;
+}
+
+/* The vertical scroller container */
+.tua-scrollview .unity-scroller--vertical,
+.tua-scrollview .unity-scroll-view__vertical-scroller {
+    width: 10px;
+    border-width: 0;
+    background-color: transparent;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
+    height: 100%;
+}
+
+/* Ensure the slider component inside the scroller takes full space */
+.tua-scrollview .unity-scroller__slider {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    flex-grow: 1;
+}
+
+/* The track area */
+.tua-scrollview .unity-scroller__track,
+.tua-scrollview #unity-tracker {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: transparent;
+    border-radius: 5px;
+    width: 10px;
+    margin: 0;
+    height: 100%; /* Force track to fill height */
+    flex-grow: 1;
+}
+
+/* The thumb/dragger handle */
+.tua-scrollview .unity-scroller__dragger,
+.tua-scrollview .unity-scroller__thumb,
+.tua-scrollview #unity-dragger {
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 5px;
+    border-width: 0;
+    width: 8px; /* Slightly smaller than track for "inset" look, or same size */
+    left: 1px; /* Center if width < 10px */
+    min-height: 20px;
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+}
+
+.tua-scrollview .unity-scroller__dragger:hover,
+.tua-scrollview .unity-scroller__thumb:hover,
+.tua-scrollview #unity-dragger:hover {
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+/* --- Slider Styling --- */
+.tua-slider {
+    min-width: 100px;
+    height: 24px; /* Sufficient height for touch/drag */
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+}
+
+/* Slider Track */
+.tua-slider .unity-base-slider__tracker,
+.tua-slider #unity-tracker {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    height: 6px;
+    border-width: 0;
+    margin-top: -3px; /* Center vertically if absolute, or just let flex handle it */
+    position: absolute;
+    top: 50%;
+    width: 100%;
+}
+
+/* Slider Handle/Dragger */
+.tua-slider .unity-base-slider__dragger,
+.tua-slider #unity-dragger {
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    min-height: 14px;
+    border-radius: 7px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-width: 0;
+    margin-top: -7px; /* Center vertically relative to top: 50% container */
+    position: absolute;
+    top: 50%;
+}
+
+.tua-slider .unity-base-slider__dragger:hover,
+.tua-slider #unity-dragger:hover {
+    background-color: rgb(255, 255, 255);
+    scale: 1.1;
+}
+
+/* --- Checkbox (Toggle) Styling --- */
+/* Reset entire toggle container */
+.tua-toggle {
+    margin: 0;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0px; /* Ensure no right margin */
+}
+
+/* Force inner input to be transparent and centered */
+.tua-toggle .unity-toggle__input,
+.tua-toggle .unity-base-field__input {
+    background-color: transparent;
+    border-width: 0;
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+
+/* The actual box (checkmark) */
+.tua-toggle .unity-toggle__checkmark,
+.tua-toggle .unity-base-toggle__checkmark,
+.tua-toggle #unity-checkmark {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    background-color: rgb(255, 255, 255);
+    border-width: 0px;
+    border-color: transparent;
+    border-radius: 6px;
+    margin: 0;
+    padding: 0;
+    -unity-background-image-tint-color: rgb(0, 0, 0);
+    flex-shrink: 0;
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Hover state */
+.tua-toggle:hover .unity-toggle__checkmark,
+.tua-toggle:hover .unity-base-toggle__checkmark,
+.tua-toggle:hover #unity-checkmark {
+    background-color: rgba(230, 230, 230, 1);
+}
+
+/* Checked state */
+.tua-toggle .unity-toggle__checkmark:checked,
+.tua-toggle .unity-base-toggle__checkmark:checked,
+.tua-toggle .unity-toggle__input:checked > .unity-toggle__checkmark {
+    background-color: rgb(255, 255, 255);
+    border-color: transparent;
+}
+
+/* --- Settings List --- */
+.tua-list {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding: 0px;
+    padding-right: 18px; /* Space for the absolute scrollbar */
+    margin: 0px;
+}
+
+/* --- Settings Fields --- */
+.tua-setting-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 0px;
+    background-color: transparent;
+}
+
+.tua-setting-row__label {
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    -unity-text-align: middle-left;
+    margin-right: 16px;
+    min-width: 120px;
+}
+
+.tua-setting-row__control {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end; /* Align all fields/controls to the right */
+}
+
+.tua-setting-row__control > * {
+    margin-right: 8px;
+}
+
+/* Removed :last-child - use margin-based spacing instead */
+
+/* Fields and Dropdowns - White box (THEMSELVES) */
+.tua-field {
+    flex-grow: 1;
+    min-width: 120px;
+    max-width: 200px;
+    margin-right: 0px; /* Ensure exact alignment with checkbox */
+}
+
+/* Specific sizing for numeric fields to allow slider to take more space */
+.tua-field.unity-integer-field,
+.tua-field.unity-float-field {
+    min-width: 80px;
+    max-width: 80px;
+    flex-grow: 0;
+    margin-left: 10px;
+    margin-right: 0px;
+}
+
+.tua-field .unity-base-field {
+    background-color: transparent;
+    border-width: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.tua-field .unity-base-text-field__input,
+.tua-field .unity-base-popup-field__input {
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border-width: 0px;
+    height: 32px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    color: rgb(0, 0, 0);
+    font-size: 13px;
+    -unity-text-align: middle-left;
+    transition-duration: 0.2s;
+    transition-property: background-color;
+}
+
+.tua-field .unity-base-text-field__input:hover,
+.tua-field .unity-base-popup-field__input:hover {
+    background-color: rgb(255, 255, 255);
+}
+
+/* Dropdown Menu (the popup list) */
+.tua-field .unity-base-popup-field__menu,
+.tua-field .unity-popup-field__menu {
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border-width: 0px;
+    padding: 4px;
+    margin-top: 4px;
+    transition-duration: 0.2s;
+    transition-property: opacity, -unity-transform-scale;
+    opacity: 1;
+}
+
+.tua-field .unity-base-popup-field__menu-item,
+.tua-field .unity-popup-field__menu-item {
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 2px;
+    transition-duration: 0.15s;
+    transition-property: background-color;
+}
+
+.tua-field .unity-base-popup-field__menu-item:hover,
+.tua-field .unity-popup-field__menu-item:hover {
+    background-color: rgba(0, 150, 255, 0.2);
+}
+
+/* --- HUD Layout (Preserved) --- */
+.hud-root {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.hud-row {
+    flex-direction: row;
+    width: 100%;
+}
+
+.top-row {
+    justify-content: space-between;
+    align-items: flex-start;
+    height: 150px;
+    position: relative;
+}
+
+.bottom-row {
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 150px;
+}
+
+.minimap-container {
+    width: 150px;
+    height: 150px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-shrink: 0;
+}
+
+.minimap-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 70px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+}
+
+.match-display-container {
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    translate: -50% 0;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: transparent;
+    padding: 0;
+    min-width: 220px;
+    max-width: 420px;
+}
+
+.match-info-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 2px;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+}
+
+.teams-list {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.team-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 3px 12px;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+
+.round-text {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 2px;
+}
+
+.timer-text {
+    font-size: 18px;
+    color: rgb(255, 200, 0);
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+}
+
+.team-players {
+    flex-direction: row;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    margin-top: 2px;
+}
+
+.player-square {
+    width: 22px;
+    height: 22px;
+    background-color: white;
+    margin-left: 2px;
+    margin-right: 2px;
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+}
+
+.kill-feed {
+    width: 300px;
+    align-items: flex-end;
+    margin-top: 10px;
+    flex-shrink: 0;
+}
+
+.feed-item {
+    color: white;
+    font-size: 14px;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+}
+
+.info-display {
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    min-width: 200px;
+    border-radius: 8px;
+}
+
+.info-top-row {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.info-badge {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+    border-radius: 8px;
+}
+
+.health-icon-label {
+    color: rgb(255, 255, 255);
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-badge-image {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgba(255, 255, 255, 1);
+}
+
+#ItemBadge {
+    width: auto;
+    min-width: 40px;
+    max-width: 100px;
+    margin-right: 0;
+    margin-bottom: 0;
+    align-self: center;
+}
+
+.info-content {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    margin: 0;
+}
+
+#ItemInfo {
+    align-items: center;
+}
+
+#ItemInfo .info-content {
+    align-items: center;
+    -unity-text-align: middle-center;
+}
+
+#ItemInfo .info-main-text {
+    -unity-text-align: middle-center;
+}
+
+#ItemInfo .info-sub-text {
+    -unity-text-align: middle-center;
+}
+
+.info-main-text {
+    font-size: 32px;
+    color: white;
+    -unity-font-style: bold;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 4px;
+}
+
+.info-sub-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    margin: 0;
+    padding: 0;
+}
+
+.info-bar {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.info-bar-fill {
+    height: 100%;
+    background-color: rgb(50, 200, 50);
+    border-radius: 0px;
+}
+
+/* --- Health Bar (Simplified - Single Bar Look) --- */
+.health-bar-dashed {
+    flex-direction: row;
+    width: 100%;
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.5); /* Container is the track */
+    padding: 0;
+    margin: 0;
+}
+
+.health-segment {
+    flex-grow: 1;
+    background-color: transparent; /* No segment background, just the fill */
+    height: 100%;
+    border-radius: 0;
+    margin: 0; /* Remove gaps completely */
+    padding: 0;
+    border-width: 0;
+}
+
+
+.health-segment-fill {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(50, 200, 50);
+    border-radius: 0;
+}
+
+.hacking-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin-bottom: 4px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.hacking-progress-fill {
+    height: 100%;
+    background-color: rgb(0, 150, 255);
+    width: 0%;
+    border-radius: 0px;
+}
+
+.inventory-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.reload-progress-bar {
+    width: 150px;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.5);
+    margin-bottom: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    align-self: center;
+    max-width: 400px;
+}
+
+.reload-progress-fill {
+    height: 100%;
+    background-color: rgb(0, 120, 255);
+    width: 0%;
+    border-radius: 0px;
+}
+
+.inventory-display {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.inventory-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    position: relative;
+    height: 48px;
+    min-width: 48px;
+    width: auto;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 0px; /* padding is on the frame so border->icon spacing is guaranteed */
+}
+
+.inventory-slot-frame {
+    position: relative; /* anchor for absolute triangle/number */
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    /* Padding between border and image (more on sides) */
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* clip triangle to the same rounded corner as the border */
+    z-index: 0;
+}
+
+.inventory-slot-selected .inventory-slot-frame {
+    border-color: rgb(0, 150, 255);
+}
+
+.inventory-slot-icon {
+    position: relative; /* anchor for the triangle */
+    z-index: 0;
+    overflow: visible;
+    scale: 0.9;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
+    transition-property: scale;
+}
+
+.inventory-slot-selected .inventory-slot-icon {
+    scale: 1;
+}
+
+.inventory-slot-image {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 1;
+}
+
+.corner-triangle {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 0px;
+    height: 0px;
+    border-left-width: 26px;
+    border-bottom-width: 26px;
+    border-left-color: transparent;
+    border-bottom-color: rgba(255, 255, 255, 0.3); /* match border color */
+    z-index: 10; /* above the image */
+}
+
+.inventory-slot-selected .corner-triangle {
+    border-bottom-color: rgb(0, 150, 255); /* match selected border */
+}
+
+.slot-number {
+    position: absolute;
+    bottom: 0px; /* slightly lower */
+    right: 4px; /* nudge left so it's centered inside triangle */
+    width: 20px;
+    height: 20px;
+    color: rgb(255, 255, 255);
+    font-size: 11px;
+    -unity-font-style: bold;
+    -unity-text-align: lower-right;
+    padding: 0px;
+    margin: 0px;
+    z-index: 11; /* above the triangle */
+}
+
+.spectator-menu {
+    position: absolute;
+    left: 50%;
+    bottom: 115px;
+    translate: -50% 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 6px 10px;
+    min-width: 260px;
+    border-radius: 8px;
+}
+
+.spectator-btn {
+    width: 26px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+}
+
+.spectator-btn-text {
+    color: rgb(255, 255, 255);
+    font-size: 16px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin: 0;
+    padding: 0;
+}
+
+.spectator-name {
+    flex-grow: 1;
+    margin-left: 8px;
+    margin-right: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.hacking-target-dot {
+    width: 22px;
+    height: 22px;
+    background-color: white;
+    margin-left: 2px;
+    margin-right: 2px;
+    border-width: 2px;
+    border-color: rgba(192, 192, 192, 0.8);
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 11px;
+}

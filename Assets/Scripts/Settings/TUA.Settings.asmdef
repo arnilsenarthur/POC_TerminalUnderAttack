@@ -1,0 +1,16 @@
+{
+    "name": "TUA.Settings",
+    "rootNamespace": "",
+    "references": [
+        "GUID:55d5bfe30348f334b862ca99eebe67b0"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
