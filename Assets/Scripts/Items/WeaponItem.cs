@@ -28,6 +28,8 @@ namespace TUA.Items
         public float damage;
         [Tooltip("Maximum range in Unity units (meters).")]
         public float range;
+        [Tooltip("Force applied to rigidbodies on hit in Unity units.")]
+        public float hitForce = 100f;
         [Tooltip("Time between shots in seconds.")]
         public float fireRate;
         [Tooltip("If true, weapon will fire continuously while holding fire button. If false, fires once per button press (semi-automatic).")]

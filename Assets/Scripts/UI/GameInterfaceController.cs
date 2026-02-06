@@ -87,7 +87,6 @@ namespace TUA.UI
         {
             base.OnEnable();
             LocalizationManager.OnLanguageChangeEvent += _OnLanguageChanged;
-            TUA.Systems.GadgetSystem.OnFlashEffectRequestEvent += _OnFlashEffectRequest;
             _InitializeUI();
         }
         
@@ -95,7 +94,6 @@ namespace TUA.UI
         {
             base.OnDisable();
             LocalizationManager.OnLanguageChangeEvent -= _OnLanguageChanged;
-            TUA.Systems.GadgetSystem.OnFlashEffectRequestEvent -= _OnFlashEffectRequest;
         }
         
         public void Update()
@@ -126,27 +124,23 @@ namespace TUA.UI
                 {
                     _currentHealthHolder.OnHealthChangeEvent += _OnHealthChanged;
                     var initialHealth = _currentHealthHolder.CurrentHealth;
-                    _previousHealth = initialHealth; // Track initial health for damage detection
+                    _previousHealth = initialHealth;
                     _OnHealthChanged(initialHealth, _currentHealthHolder.MaxHealth);
                 }
                 else
-                {
-                    _previousHealth = -1f; // Reset tracking when no health holder
-                }
+                    _previousHealth = -1f;
                 
-                if (_currentWeaponUser)
+                if (_currentWeaponUser != null)
                     _currentWeaponUser.OnReloadProgressChangeEvent -= _OnReloadProgressChanged;
                 
                 _currentWeaponUser = entity as PlayerEntity;
-                if (_currentWeaponUser)
+                if (_currentWeaponUser != null)
                 {
                     _currentWeaponUser.OnReloadProgressChangeEvent += _OnReloadProgressChanged;
                     _OnReloadProgressChanged(_currentWeaponUser.ReloadProgress);
                 }
                 else
-                {
                     _OnReloadProgressChanged(0f);
-                }
             }
             if (_currentInventoryHolder != null)
                 _UpdateItemInfo(_currentInventoryHolder.Inventory);
@@ -187,6 +181,15 @@ namespace TUA.UI
                 Debug.LogWarning("[GameInterfaceController] Root visual element is null!");
                 return;
             }
+
+            _damageFlashOverlay = _root.Q<VisualElement>("DamageFlashOverlay");
+            _flashOverlay = _root.Q<VisualElement>("FlashOverlay");
+
+            if (_damageFlashOverlay == null)
+                Debug.LogWarning("[GameInterfaceController] DamageFlashOverlay not found in HUD UXML!");
+
+            if (_flashOverlay == null)
+                Debug.LogWarning("[GameInterfaceController] FlashOverlay not found in HUD UXML!");
             
             var inventoryContainer = _root.Q<VisualElement>("InventoryContainer");
             _reloadProgressBar = inventoryContainer?.Q<VisualElement>("ReloadProgressBar");
@@ -245,42 +248,6 @@ namespace TUA.UI
             _team2Players = matchDisplayContainer.Q<VisualElement>("Team2Players");
             _hackingTargetsRow = matchDisplayContainer.Q<VisualElement>("HackingTargetsRow");
             _hackingTargetsContainer = matchDisplayContainer.Q<VisualElement>("HackingTargetsContainer");
-            
-            // Create damage flash overlay
-            _damageFlashOverlay = _root.Q<VisualElement>("DamageFlashOverlay");
-            if (_damageFlashOverlay == null)
-            {
-                // Create damage flash overlay if it doesn't exist in UXML
-                _damageFlashOverlay = new VisualElement();
-                _damageFlashOverlay.name = "DamageFlashOverlay";
-                _damageFlashOverlay.style.position = Position.Absolute;
-                _damageFlashOverlay.style.left = 0;
-                _damageFlashOverlay.style.right = 0;
-                _damageFlashOverlay.style.top = 0;
-                _damageFlashOverlay.style.bottom = 0;
-                _damageFlashOverlay.style.backgroundColor = new StyleColor(Color.clear);
-                _damageFlashOverlay.style.display = DisplayStyle.None;
-                _damageFlashOverlay.pickingMode = PickingMode.Ignore;
-                // Insert at the beginning to ensure it's behind all other UI elements
-                _root.Insert(0, _damageFlashOverlay);
-            }
-
-            // Create flash overlay
-            _flashOverlay = _root.Q<VisualElement>("FlashOverlay");
-            if (_flashOverlay == null)
-            {
-                _flashOverlay = new VisualElement();
-                _flashOverlay.name = "FlashOverlay";
-                _flashOverlay.style.position = Position.Absolute;
-                _flashOverlay.style.left = 0;
-                _flashOverlay.style.right = 0;
-                _flashOverlay.style.top = 0;
-                _flashOverlay.style.bottom = 0;
-                _flashOverlay.style.backgroundColor = new StyleColor(Color.clear);
-                _flashOverlay.style.display = DisplayStyle.None;
-                _flashOverlay.pickingMode = PickingMode.Ignore;
-                _root.Insert(0, _flashOverlay);
-            }
             
             // Initialize spectator menu
             _spectatorMenu = _root.Q<VisualElement>("SpectatorMenu");
@@ -719,20 +686,13 @@ namespace TUA.UI
             _damageFlashCoroutine = null;
         }
 
-        private void _OnFlashEffectRequest(float duration)
-        {
-            TriggerFlashEffect(duration);
-        }
-
         public void TriggerFlashEffect(float duration)
         {
             if (_flashOverlay == null)
                 return;
 
             if (_flashCoroutine != null)
-            {
                 StopCoroutine(_flashCoroutine);
-            }
 
             _flashCoroutine = StartCoroutine(_FlashEffect(duration));
         }
@@ -742,6 +702,7 @@ namespace TUA.UI
             if (_flashOverlay == null)
                 yield break;
 
+            _flashOverlay.BringToFront();
             _flashOverlay.style.display = DisplayStyle.Flex;
             _flashOverlay.style.backgroundColor = new StyleColor(new Color(1f, 1f, 1f, 1f));
 

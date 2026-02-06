@@ -1,8 +1,9 @@
-using FishNet.Object;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using TUA.Audio;
 using TUA.Core;
 using TUA.Core.Interfaces;
-using TUA.Entities;
 using TUA.Items;
 using TUA.Misc;
 using UnityEngine;
@@ -10,7 +11,7 @@ using UnityEngine;
 namespace TUA.Entities
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class GadgetEntity : Entity, IGadgetEntity
+    public partial class GadgetEntity : Entity, IGadgetEntity
     {
         #region Serialized Fields
         [Header("References")]
@@ -35,8 +36,6 @@ namespace TUA.Entities
 
         #region Fields
         private Rigidbody _rigidbody;
-        private float _fuseTimer;
-        private float _initialFuseTime;
         private bool _hasExploded;
         private bool _hasLanded;
         private float _lifetimeTimer;
@@ -52,7 +51,6 @@ namespace TUA.Entities
         Uuid IGadgetEntity.EntityUuid => EntityUuid;
         bool IGadgetEntity.IsServerSide => IsServerSide;
         bool IGadgetEntity.IsValidAndSpawned => IsSpawned;
-        public event Action<IGadgetEntity, Uuid, float> OnFlashBlindRequestEvent;
         public event Action<IGadgetEntity, Vector3, float, float> OnSmokeSpawnRequestEvent;
         public event Action<IGadgetEntity, GamePlayer, GamePlayer> OnKillEvent;
         #endregion
@@ -61,11 +59,8 @@ namespace TUA.Entities
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
-            if (_rigidbody != null)
-            {
-                _rigidbody.angularDamping = angularDamping;
-                _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
-            }
+            _rigidbody.angularDamping = angularDamping;
+            _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
         }
 
         public void Update()
@@ -84,18 +79,7 @@ namespace TUA.Entities
             {
                 _hasLanded = _CheckIfLanded();
                 if (_hasLanded)
-                {
-                    _fuseTimer = _initialFuseTime;
-                }
-            }
-
-            if (_hasLanded)
-            {
-                _fuseTimer -= Time.deltaTime;
-                if (_fuseTimer <= 0f)
-                {
                     _TriggerEffect();
-                }
             }
         }
 
@@ -106,12 +90,8 @@ namespace TUA.Entities
 
             if (!string.IsNullOrEmpty(_gadgetItem.impactSoundKey))
             {
-                var audioSystem = TUA.Audio.AudioSystem.Instance;
-                if (audioSystem != null)
-                {
-                    var contactPoint = collision.GetContact(0).point;
-                    audioSystem.PlayBroadcast(_gadgetItem.impactSoundKey, contactPoint, 1f, TUA.Audio.AudioCategory.Gameplay);
-                }
+                var contactPoint = collision.GetContact(0).point;
+                AudioSystem.Instance?.PlayBroadcast(_gadgetItem.impactSoundKey, contactPoint, 1f, AudioCategory.Gameplay);
             }
 
             if (!_isGrenade)
@@ -154,12 +134,10 @@ namespace TUA.Entities
             if (_rigidbody == null)
                 _rigidbody = GetComponent<Rigidbody>();
 
-            if (_rigidbody != null)
-            {
-                _rigidbody.constraints = RigidbodyConstraints.None;
-                _rigidbody.linearVelocity = velocity;
-                _rigidbody.angularDamping = angularDamping;
-                _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            _rigidbody.constraints = RigidbodyConstraints.None;
+            _rigidbody.linearVelocity = velocity;
+            _rigidbody.angularDamping = angularDamping;
+            _rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
                 if (_isGrenade)
                 {
@@ -170,16 +148,7 @@ namespace TUA.Entities
                     );
                     _rigidbody.angularVelocity = randomSpin;
                 }
-            }
 
-            if (item is GrenadeItem grenade)
-                _initialFuseTime = grenade.fuseTime;
-            else if (item is FlashItem flash)
-                _initialFuseTime = flash.flashFuseTime;
-            else if (item is SmokeItem smoke)
-                _initialFuseTime = smoke.smokeFuseTime;
-
-            _fuseTimer = float.MaxValue;
             _hasLanded = false;
             _lifetimeTimer = 0f;
             _landingStableTimer = 0f;
@@ -194,7 +163,7 @@ namespace TUA.Entities
         #region Private Methods
         private void _TriggerEffect()
         {
-            if (_hasExploded)
+            if (!IsServerSide || _hasExploded)
                 return;
 
             _hasExploded = true;
@@ -208,49 +177,13 @@ namespace TUA.Entities
 
             RpcClient_TriggerEffect();
 
-            if (_gadgetItem is FlashItem flash)
-            {
-                var allPlayers = GameWorld.Instance?.AllPlayers;
-                if (allPlayers != null)
-                {
-                    foreach (var player in allPlayers)
-                    {
-                        if (player == null || !player.IsOnline)
-                            continue;
-
-                        var playerEntity = GameWorld.Instance?.GetEntityOwnedByPlayer<PlayerEntity>(player);
-                        if (playerEntity == null)
-                            continue;
-
-                        var playerPosition = playerEntity.transform.position + Vector3.up * playerEntity.headHeight;
-                        var toPlayer = (playerPosition - transform.position).normalized;
-                        var distance = Vector3.Distance(transform.position, playerPosition);
-
-                        if (distance > flash.flashRadius)
-                            continue;
-
-                        var angle = Vector3.Angle(transform.forward, toPlayer);
-                        if (angle > flash.blindAngle)
-                            continue;
-
-                        if (Physics.Raycast(transform.position, toPlayer, out var hit, distance))
-                        {
-                            if (hit.collider.GetComponent<PlayerEntity>() != playerEntity)
-                                continue;
-                        }
-
-                        RpcClient_FlashBlind(playerEntity.EntityUuid, flash.blindDuration);
-                    }
-                }
-            }
-
             if (GameWorld.Instance)
                 GameWorld.Instance.Server_DespawnObject(gameObject);
         }
 
         private void _TriggerGrenade()
         {
-            if (!(_gadgetItem is GrenadeItem grenade))
+            if (!IsServerSide || !(_gadgetItem is GrenadeItem grenade))
                 return;
 
             var position = transform.position;
@@ -258,59 +191,77 @@ namespace TUA.Entities
             var damage = grenade.explosionDamage;
             var force = grenade.explosionForce;
 
-            var colliders = Physics.OverlapSphere(position, radius);
-            foreach (var col in colliders)
+            var gameWorld = GameWorld.Instance;
+            if (gameWorld == null)
+                return;
+
+            GamePlayer thrower = null;
+            PlayerEntity throwerEntity = null;
+            if (_throwerUuid.IsValid)
             {
-                var distance = Vector3.Distance(position, col.transform.position);
+                foreach (var player in gameWorld.AllPlayers)
+                {
+                    if (player != null && player.Uuid == _throwerUuid)
+                    {
+                        thrower = player;
+                        throwerEntity = gameWorld.GetEntityOwnedByPlayer<PlayerEntity>(thrower);
+                        break;
+                    }
+                }
+            }
+
+            // Entity-based damage handling (avoids multiple hits from multiple colliders on same entity)
+            var processedEntities = new HashSet<Entity>();
+            var allEntities = gameWorld.AllEntities.Values.ToList();
+
+            foreach (var entity in allEntities)
+            {
+                if (entity == null || !entity.IsSpawned || !entity.IsServerSide)
+                    continue;
+
+                if (processedEntities.Contains(entity))
+                    continue;
+
+                var entityPosition = entity.transform.position;
+                var distance = Vector3.Distance(position, entityPosition);
+
+                if (distance > radius)
+                    continue;
+
                 var normalizedDistance = Mathf.Clamp01(distance / radius);
                 var damageMultiplier = grenade.damageFalloffCurve.Evaluate(normalizedDistance);
                 var finalDamage = damage * damageMultiplier;
 
-                var health = col.GetComponent<IHealth>();
-                if (health != null)
+                if (entity is IHealth health)
                 {
-                    var gameWorld = GameWorld.Instance;
-                    GamePlayer thrower = null;
-                    
-                    if (gameWorld != null && gameWorld.AllPlayers != null)
-                    {
-                        foreach (var player in gameWorld.AllPlayers)
-                        {
-                            if (player != null && player.Uuid == _throwerUuid)
-                            {
-                                thrower = player;
-                                var throwerEntity = gameWorld.GetEntityOwnedByPlayer<PlayerEntity>(player);
-                                if (throwerEntity != null && (object)health == throwerEntity)
-                                    continue;
-                                break;
-                            }
-                        }
-                    }
+                    if (throwerEntity != null && entity == throwerEntity)
+                        continue;
+
+                    processedEntities.Add(entity);
 
                     var healthBeforeDamage = health.CurrentHealth;
                     health.Server_TakeDamage(finalDamage);
 
                     if (healthBeforeDamage > 0f && health.CurrentHealth <= 0f)
                     {
-                        GamePlayer victim = null;
-                        if (health is Entity victimEntity)
-                            victim = victimEntity.GamePlayer;
-                        else if (col != null)
-                        {
-                            var hitEntity = col.GetComponent<Entity>() ?? col.GetComponentInParent<Entity>();
-                            if (hitEntity != null)
-                                victim = hitEntity.GamePlayer;
-                        }
-
-                        if (thrower != null || victim != null)
-                            OnKillEvent?.Invoke(this, thrower, victim);
+                        var victim = entity.GamePlayer;
+                        OnKillEvent?.Invoke(this, thrower, victim);
                     }
                 }
+            }
+
+            // Collider-based physics forces (handles all rigidbodies, not just entities)
+            var colliders = Physics.OverlapSphere(position, radius);
+            foreach (var col in colliders)
+            {
+                var colPosition = col.transform.position;
+                var distance = Vector3.Distance(position, colPosition);
+                var normalizedDistance = Mathf.Clamp01(distance / radius);
 
                 var rb = col.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    var direction = (col.transform.position - position).normalized;
+                    var direction = (colPosition - position).normalized;
                     rb.AddForce(direction * force * (1f - normalizedDistance), ForceMode.Impulse);
                 }
             }
@@ -326,7 +277,6 @@ namespace TUA.Entities
             var blindAngle = flash.blindAngle;
             var blindDuration = flash.blindDuration;
 
-            var forward = transform.forward;
             var allPlayers = GameWorld.Instance?.AllPlayers;
 
             if (allPlayers == null)
@@ -341,24 +291,45 @@ namespace TUA.Entities
                 if (playerEntity == null)
                     continue;
 
-                var playerPosition = playerEntity.transform.position + Vector3.up * playerEntity.headHeight;
-                var toPlayer = (playerPosition - position).normalized;
-                var distance = Vector3.Distance(position, playerPosition);
+                playerEntity.GetCameraView(out var cameraPosition, out var cameraRotation, out _);
+                var cameraForward = cameraRotation * Vector3.forward;
+
+                var toFlash = position - cameraPosition;
+                var distance = toFlash.magnitude;
 
                 if (distance > radius)
                     continue;
 
-                var angle = Vector3.Angle(forward, toPlayer);
+                var toFlashDir = toFlash / Mathf.Max(0.001f, distance);
+                var angle = Vector3.Angle(cameraForward, toFlashDir);
                 if (angle > blindAngle)
                     continue;
 
-                if (Physics.Raycast(position, toPlayer, out var hit, distance))
+                var hits = Physics.RaycastAll(cameraPosition, toFlashDir, distance, ~0, QueryTriggerInteraction.Ignore);
+                if (hits?.Length > 0)
                 {
-                    if (hit.collider.GetComponent<PlayerEntity>() != playerEntity)
+                    Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                    var blocked = false;
+                    foreach (var h in hits)
+                    {
+                        if (h.collider == null)
+                            continue;
+
+                        if (h.collider.GetComponentInParent<PlayerEntity>() == playerEntity)
+                            continue;
+
+                        if (h.collider.GetComponentInParent<GadgetEntity>() == this)
+                            break;
+
+                        blocked = true;
+                        break;
+                    }
+
+                    if (blocked)
                         continue;
                 }
 
-                RpcClient_FlashBlind(playerEntity.EntityUuid, blindDuration);
+                RpcClient_FlashBlind(player.Uuid, blindDuration);
             }
         }
 
@@ -372,9 +343,7 @@ namespace TUA.Entities
             var duration = smoke.smokeDuration;
 
             if (IsServerSide)
-            {
                 OnSmokeSpawnRequestEvent?.Invoke(this, position, radius, duration);
-            }
 
             RpcClient_SpawnSmoke(position, radius, duration);
         }
@@ -386,7 +355,7 @@ namespace TUA.Entities
 
             var currentPosition = transform.position;
             var distanceMoved = Vector3.Distance(currentPosition, _lastStablePosition);
-
+            
             if (distanceMoved <= landingMovementThreshold)
             {
                 var timeSinceStable = Time.time - _lastStableTime;
@@ -403,51 +372,8 @@ namespace TUA.Entities
                 _lastStablePosition = currentPosition;
                 _lastStableTime = Time.time;
             }
-
+            
             return false;
-        }
-        #endregion
-
-        #region Network RPCs
-        [ObserversRpc(ExcludeServer = false)]
-        private void RpcClient_Initialize(string itemId)
-        {
-            if (IsServerSide)
-                return;
-
-            if (!string.IsNullOrEmpty(itemId) && itemRegistry != null)
-                _gadgetItem = itemRegistry.GetEntry<GadgetItem>(itemId);
-        }
-
-        [ObserversRpc(ExcludeServer = false)]
-        private void RpcClient_TriggerEffect()
-        {
-            if (_gadgetItem == null)
-                return;
-
-            if (!string.IsNullOrEmpty(_gadgetItem.effectSoundKey))
-            {
-                var audioSystem = Audio.AudioSystem.Instance;
-                audioSystem?.PlayLocal(_gadgetItem.effectSoundKey, transform.position, 1f, TUA.Audio.AudioCategory.Gameplay);
-            }
-
-            if(_gadgetItem.effectPrefab == null)
-                return;
-
-            var effect = Instantiate(_gadgetItem.effectPrefab, transform.position, transform.rotation);
-            Destroy(effect, 10f);
-        }
-
-        [ObserversRpc(ExcludeServer = false)]
-        private void RpcClient_FlashBlind(Uuid playerUuid, float duration)
-        {
-            OnFlashBlindRequestEvent?.Invoke(this, playerUuid, duration);
-        }
-
-        [ObserversRpc(ExcludeServer = false)]
-        private void RpcClient_SpawnSmoke(Vector3 position, float radius, float duration)
-        {
-            OnSmokeSpawnRequestEvent?.Invoke(this, position, radius, duration);
         }
         #endregion
     }

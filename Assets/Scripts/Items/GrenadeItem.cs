@@ -15,8 +15,6 @@ namespace TUA.Items
         public AnimationCurve damageFalloffCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
         [Tooltip("Explosion force applied to rigidbodies.")]
         public float explosionForce = 500f;
-        [Tooltip("Fuse time in seconds before explosion.")]
-        public float fuseTime = 3f;
         #endregion
     }
 }

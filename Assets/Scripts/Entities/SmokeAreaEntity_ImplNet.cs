@@ -22,10 +22,11 @@ namespace TUA.Entities
             _totalLifetime.OnChange += _OnTotalLifetimeChanged;
             _radius.OnChange += _OnRadiusChanged;
             
+            if (smokeParticleSystem == null)
+                smokeParticleSystem = GetComponentInChildren<ParticleSystem>();
+
             if (smokeParticleSystem != null)
-            {
                 smokeParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            }
             
             _SyncParticleSystem();
         }

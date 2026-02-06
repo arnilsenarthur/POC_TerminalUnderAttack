@@ -11,8 +11,6 @@ namespace TUA.Items
         public float smokeRadius = 8f;
         [Tooltip("Smoke duration in seconds.")]
         public float smokeDuration = 15f;
-        [Tooltip("Fuse time in seconds before smoke starts.")]
-        public float smokeFuseTime = 1f;
         #endregion
     }
 }

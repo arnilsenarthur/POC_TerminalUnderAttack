@@ -21,7 +21,7 @@ namespace TUA.Systems
         [Header("Data Drive")]
         public DataDriveItem dataDriveItem;
         #endregion
-
+        
         #region Properties
         public HackingTarget CurrentHackingTarget { get; private set; }
         #endregion
@@ -29,26 +29,26 @@ namespace TUA.Systems
         #region Events
         public Action<HackingTarget> OnTargetHackedEvent;
         #endregion
-
+        
         #region Unity Callbacks
         protected override void OnEnable()
         {
             base.OnEnable();
             GameWorld.OnTickEvent += _OnTick;
         }
-
+        
         protected override void OnDisable()
         {
             base.OnDisable();
             GameWorld.OnTickEvent -= _OnTick;
         }
-
+        
         public void Update()
         {
             CurrentHackingTarget = _GetCurrentHackingTarget();
         }
         #endregion
-
+        
         #region Private Methods
         private void _OnTick(float deltaTime)
         {
@@ -59,16 +59,16 @@ namespace TUA.Systems
             {
                 if (!target)
                     continue;
-
+                
                 if (target.IsHacked)
                     continue;
-
+                
                 var playersLookingAtTarget = _GetPlayersLookingAtTarget(target);
                 var isBeingHacked = playersLookingAtTarget.Count > 0 && !target.IsHacked;
 
                 if (target.IsBeingHacked != isBeingHacked)
                     target.Server_SetIsBeingHacked(isBeingHacked);
-
+                
                 if (playersLookingAtTarget.Count > 0)
                 {
                     var totalHackingSpeed = 0f;
@@ -77,15 +77,15 @@ namespace TUA.Systems
                         var distanceMultiplier = distanceMultiplierCurve.Evaluate(playerData.Distance / maxDetectionDistance);
                         totalHackingSpeed += hackingSpeed * distanceMultiplier;
                     }
-
+                    
                     var newProgress = Mathf.Clamp01(target.HackingProgress + totalHackingSpeed * deltaTime);
                     target.Server_SetHackingProgress(newProgress);
-
+                    
                     if (newProgress >= 1f)
                     {
-                        _CallOnTargetHacked(target, playersLookingAtTarget);
-                        target.Server_SetIsHacked(true);
-                        target.Server_SetIsBeingHacked(false);
+                    _CallOnTargetHacked(target, playersLookingAtTarget);
+                    target.Server_SetIsHacked(true);
+                    target.Server_SetIsBeingHacked(false);
                     }
                 }
                 else
@@ -95,12 +95,12 @@ namespace TUA.Systems
                 }
             }
         }
-
+        
         private HackingTarget _GetCurrentHackingTarget()
         {
             if (!Camera.main)
                 return null;
-
+            
             var cam = Camera.main;
             var ray = new Ray(cam.transform.position, cam.transform.forward);
             RaycastHit hit;
@@ -112,7 +112,7 @@ namespace TUA.Systems
             }
             return null;
         }
-
+        
         private List<PlayerHackingData> _GetPlayersLookingAtTarget(HackingTarget target)
         {
             var playersLooking = new List<PlayerHackingData>();
@@ -129,27 +129,27 @@ namespace TUA.Systems
                 {
                     if (!playerEntity)
                         continue;
-
+                    
                     var selectedItem = playerEntity.Inventory?.GetSelectedItem();
                     if (selectedItem == null || string.IsNullOrEmpty(selectedItem.item))
                         continue;
-
+                    
                     Item item = null;
                     if (itemRegistry)
                         item = itemRegistry.GetEntry<Item>(selectedItem.item);
-
+                    
                     if (item is not HackerToolItem)
                         continue;
-
+                    
                     if (!playerEntity.IsAimReady)
                         continue;
-
+                    
                     if (!playerEntity.IsFiring)
                         continue;
 
-                    if (!_IsPlayerLookingAtTarget(playerEntity, target))
+                    if (!_IsPlayerLookingAtTarget(playerEntity, target)) 
                         continue;
-
+                    
                     var distance = Vector3.Distance(playerEntity.transform.position, target.transform.position);
                     if (distance <= maxDetectionDistance)
                     {
@@ -163,54 +163,53 @@ namespace TUA.Systems
             }
             return playersLooking;
         }
-
+        
         private bool _IsPlayerLookingAtTarget(PlayerEntity playerEntity, HackingTarget target)
         {
             playerEntity.GetCameraView(out var position, out var rotation, out _);
             var ray = new Ray(position, rotation * Vector3.forward);
-            if (!Physics.Raycast(ray, out var hit, maxDetectionDistance, detectionLayerMask))
+            if (!Physics.Raycast(ray, out var hit, maxDetectionDistance, detectionLayerMask)) 
                 return false;
-
+            
             return hit.collider.gameObject == target.gameObject;
         }
-
+        
         private void _CallOnTargetHacked(HackingTarget target, List<PlayerHackingData> players)
         {
             if (players == null || players.Count == 0)
                 return;
-
-            var feedSystem = FeedSystem.Instance;
-            if (feedSystem == null)
+            
+            if (FeedSystem.Instance == null)
                 return;
-
+            
             if (!GameWorld.Instance)
                 return;
-
+            
             var firstPlayer = true;
             foreach (var playerData in players)
             {
                 if (!playerData.PlayerEntityUuid.IsValid)
                     continue;
-
+                
                 var playerEntity = GameWorld.Instance.GetEntityByUuid<PlayerEntity>(playerData.PlayerEntityUuid);
                 if (!playerEntity)
                     continue;
-
+                
                 var gamePlayer = playerEntity.GamePlayer;
                 if (gamePlayer == null)
                     continue;
-
+                
                 var playerName = gamePlayer.Name ?? "Unknown";
                 var targetName = target.unlocalizedName ?? "Target";
                 var playerColor = FeedSystem.GetPlayerColor(gamePlayer);
                 var targetColor = FeedSystem.ColorToHex(target.color);
                 var player = $"<color={playerColor}>{playerName}</color>";
                 var targetLabel = $"<color={targetColor}>{targetName}</color>";
-                feedSystem.Server_AddFeedInfoLocalized("feed.hacked", 3f, FeedMessageType.Objective, player, targetLabel);
+                FeedSystem.Instance.Server_AddFeedInfoLocalized("feed.hacked", 3f, FeedMessageType.Objective, player, targetLabel);
 
-                if (!firstPlayer || !dataDriveItem)
+                if (!firstPlayer || !dataDriveItem) 
                     continue;
-
+                
                 _ReplaceHackerToolWithDataDrive(playerEntity, target);
                 firstPlayer = false;
             }
@@ -221,31 +220,31 @@ namespace TUA.Systems
         {
             if (!playerEntity || !target || !dataDriveItem)
                 return;
-
+            
             var inventory = playerEntity.Inventory;
             if (inventory == null)
                 return;
-
+            
             var hackerToolSlot = -1;
             for (var i = 0; i < inventory.slots.Length; i++)
             {
                 if (inventory.IsSlotEmpty(i))
                     continue;
-
+                
                 Item item = null;
                 if (itemRegistry)
                     item = itemRegistry.GetEntry<Item>(inventory.slots[i].item);
 
-                if (item is not HackerToolItem)
+                if (item is not HackerToolItem) 
                     continue;
-
+                
                 hackerToolSlot = i;
                 break;
             }
-
+            
             if (hackerToolSlot < 0)
                 return;
-
+            
             var newInventory = inventory.Copy();
             newInventory.slots[hackerToolSlot] = new DataDriveItemStack
             {

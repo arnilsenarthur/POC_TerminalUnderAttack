@@ -93,5 +93,8 @@
             <ui:Label name="SpectatorName" text="SPECTATING: PLAYER" class="spectator-name"/>
             <ui:Button name="SpectatorNext" text="›" class="tua-button tua-button--icon" />
         </ui:VisualElement>
+
+        <ui:VisualElement name="DamageFlashOverlay" class="hud-overlay hud-overlay--damage" />
+        <ui:VisualElement name="FlashOverlay" class="hud-overlay hud-overlay--flash" />
     </ui:VisualElement>
 </ui:UXML>

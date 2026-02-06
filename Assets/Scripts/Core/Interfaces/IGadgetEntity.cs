@@ -10,7 +10,6 @@ namespace TUA.Core.Interfaces
         Uuid EntityUuid { get; }
         bool IsServerSide { get; }
         bool IsValidAndSpawned { get; }
-        event Action<IGadgetEntity, Uuid, float> OnFlashBlindRequestEvent;
         event Action<IGadgetEntity, Vector3, float, float> OnSmokeSpawnRequestEvent;
         event Action<IGadgetEntity, GamePlayer, GamePlayer> OnKillEvent;
     }

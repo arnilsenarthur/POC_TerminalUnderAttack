@@ -84,8 +84,8 @@ MonoBehaviour:
   minBounceVelocity: 0.25
   angularDamping: 2
   maxLifetime: 10
-  landingMovementThreshold: 0.1
-  landingStableTime: 0.1
+  landingMovementThreshold: 0.5
+  landingStableTime: 0.2
 --- !u!114 &8393389799155840521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117,7 +117,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584312398844037934
+  _initializedTimestamp: -8584312040049561154
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0

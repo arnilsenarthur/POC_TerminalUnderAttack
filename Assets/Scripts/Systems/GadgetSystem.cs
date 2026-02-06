@@ -12,9 +12,6 @@ namespace TUA.Systems
 {
     public partial class GadgetSystem : SingletonNetBehaviour<GadgetSystem>
     {
-        #region Static Events
-        public static event Action<float> OnFlashEffectRequestEvent;
-        #endregion
 
         #region Serialized Fields
         [Header("Prefabs")]
@@ -28,7 +25,6 @@ namespace TUA.Systems
         #endregion
 
         #region Fields
-        private float _flashEndTime;
         private readonly HashSet<IGadgetEntity> _registeredGadgetEntities = new();
         private readonly HashSet<IWeaponUser> _registeredWeaponUsers = new();
         #endregion
@@ -50,7 +46,6 @@ namespace TUA.Systems
             {
                 if (gadgetEntity != null)
                 {
-                    gadgetEntity.OnFlashBlindRequestEvent -= _OnFlashBlindRequest;
                     gadgetEntity.OnSmokeSpawnRequestEvent -= _OnSmokeSpawnRequest;
                     gadgetEntity.OnKillEvent -= _OnKillEvent;
                 }
@@ -89,11 +84,6 @@ namespace TUA.Systems
             _PlayThrowSound(gadgetItem, origin);
 
             return true;
-        }
-
-        public void Client_ApplyFlashEffect(float duration)
-        {
-            OnFlashEffectRequestEvent?.Invoke(duration);
         }
 
         public void Server_SpawnSmokeArea(Vector3 position, float radius, float duration)
@@ -144,7 +134,6 @@ namespace TUA.Systems
                 return;
 
             _registeredGadgetEntities.Add(gadgetEntity);
-            gadgetEntity.OnFlashBlindRequestEvent += _OnFlashBlindRequest;
             gadgetEntity.OnSmokeSpawnRequestEvent += _OnSmokeSpawnRequest;
             gadgetEntity.OnKillEvent += _OnKillEvent;
         }
@@ -155,22 +144,15 @@ namespace TUA.Systems
                 return;
 
             _registeredGadgetEntities.Remove(gadgetEntity);
-            gadgetEntity.OnFlashBlindRequestEvent -= _OnFlashBlindRequest;
             gadgetEntity.OnSmokeSpawnRequestEvent -= _OnSmokeSpawnRequest;
             gadgetEntity.OnKillEvent -= _OnKillEvent;
         }
 
-        private void _OnFlashBlindRequest(IGadgetEntity gadgetEntity, Uuid playerUuid, float duration)
-        {
-            var localPlayer = GameWorld.Instance?.LocalGamePlayer;
-            if (localPlayer == null || localPlayer.Uuid != playerUuid)
-                return;
-
-            Client_ApplyFlashEffect(duration);
-        }
-
         private void _OnSmokeSpawnRequest(IGadgetEntity gadgetEntity, Vector3 position, float radius, float duration)
         {
+            if (!IsServerSide)
+                return;
+
             Server_SpawnSmokeArea(position, radius, duration);
         }
 
@@ -179,11 +161,8 @@ namespace TUA.Systems
             if (!IsServerSide)
                 return;
 
-            if (GameWorld.Instance != null && FeedSystem.Instance != null)
-            {
-                if (killer != null || victim != null)
-                    FeedSystem.Instance.Server_AddKillMessage(killer, victim);
-            }
+            if (killer != null || victim != null)
+                FeedSystem.InvokeKillEvent(killer, victim);
         }
 
         private void _RegisterWeaponUser(IWeaponUser weaponUser)

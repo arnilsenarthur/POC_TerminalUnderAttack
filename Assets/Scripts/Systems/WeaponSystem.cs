@@ -170,19 +170,16 @@ namespace TUA.Systems
                     shotDirection = errorRotationQuat * shotDirection;
                 }
                 
-                Vector3 hitPoint;
-                bool actuallyHit;
-                if (Physics.Raycast(origin, shotDirection, out var hit, range, hitLayers))
+                bool actuallyHit = Physics.Raycast(origin, shotDirection, out var hit, range, hitLayers);
+                Vector3 hitPoint = actuallyHit ? hit.point : origin + shotDirection * range;
+                
+                if (actuallyHit)
                 {
-                    hitPoint = hit.point;
-                    actuallyHit = true;
                     Debug.Log($"[WeaponSystem] Server_Shoot: Raycast HIT - Origin: {origin}, Direction: {shotDirection}, Hit Point: {hitPoint}, Collider: {hit.collider.name} (Layer: {hit.collider.gameObject.layer}), Distance: {hit.distance:F2}m");
                     _OnWeaponHit(weaponUser, hit, damage, weaponItem, origin, range);
                 }
                 else
                 {
-                    hitPoint = origin + shotDirection * range;
-                    actuallyHit = false;
                     Debug.Log($"[WeaponSystem] Server_Shoot: Raycast MISS - Origin: {origin}, Direction: {shotDirection}, Max Range: {range}m, End Point: {hitPoint}");
                     _OnWeaponMiss(weaponUser, hitPoint);
                 }
@@ -474,13 +471,11 @@ namespace TUA.Systems
                 {
                     RpcClient_SpawnDeathEffects(hit.point, hit.normal);
 
-                    if (GameWorld.Instance != null && FeedSystem.Instance != null)
-                    {
-                        GamePlayer killer = null;
-                        GamePlayer victim = null;
+                    GamePlayer killer = null;
+                    GamePlayer victim = null;
 
-                        if (shooter is Entity shooterEntity)
-                            killer = shooterEntity.GamePlayer;
+                    if (shooter is Entity shooterEntity)
+                        killer = shooterEntity.GamePlayer;
 
                         if (healthComponent is Entity victimEntity)
                             victim = victimEntity.GamePlayer;
@@ -491,10 +486,16 @@ namespace TUA.Systems
                                 victim = hitEntity.GamePlayer;
                         }
 
-                        if (killer != null || victim != null)
-                            FeedSystem.Instance.Server_AddKillMessage(killer, victim);
+                    if (killer != null || victim != null)
+                        FeedSystem.InvokeKillEvent(killer, victim);
+                }
             }
-        }
+
+            var rb = hit.collider.GetComponent<Rigidbody>();
+            if (rb != null && weaponItem != null && weaponItem.hitForce > 0f)
+            {
+                var direction = (hit.point - origin).normalized;
+                rb.AddForceAtPosition(direction * weaponItem.hitForce, hit.point, ForceMode.Impulse);
             }
         }
 

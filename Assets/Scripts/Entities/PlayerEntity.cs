@@ -344,7 +344,7 @@ namespace TUA.Entities
             
             if (!IsWindowOpen())
             {
-                if (grounded && Input.GetButtonDown("Jump"))
+                if (grounded && Input.GetKeyDown(KeyCode.Space))
                     vel.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
             }
             
@@ -486,7 +486,7 @@ namespace TUA.Entities
                 }
                 else
                 {
-                    var wantScope = Input.GetButton("Fire2") || Input.GetMouseButton(1);
+                    var wantScope = Input.GetMouseButton(1);
                     if (IsScoped != wantScope)
                     {
                         Client_UpdateScoping(wantScope);
@@ -508,7 +508,7 @@ namespace TUA.Entities
                     return;
                 }
 
-                var wantAim = Input.GetButton("Fire2") || Input.GetMouseButton(1);
+                var wantAim = Input.GetMouseButton(1);
                 if (wantAim == IsAiming)
                     return;
 
@@ -525,7 +525,7 @@ namespace TUA.Entities
             if (IsWindowOpen())
                 return;
 
-            var wantFiring = Input.GetButton("Fire1");
+            var wantFiring = Input.GetMouseButton(0);
             if (wantFiring == IsFiring)
                 return;
 
@@ -973,7 +973,7 @@ var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftS
             }
 
             // For automatic weapons: fire while holding button. For semi-automatic: fire only on button down
-            var shouldFire = isAutomatic ? Input.GetButton("Fire1") : Input.GetButtonDown("Fire1");
+            var shouldFire = isAutomatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
             
             if (shouldFire)
             {

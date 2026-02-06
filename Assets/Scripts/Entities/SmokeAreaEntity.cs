@@ -24,6 +24,7 @@ namespace TUA.Entities
             if (smokeParticleSystem != null)
             {
                 smokeParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                _SetEmissionEnabled(true);
             }
         }
 
@@ -35,6 +36,8 @@ namespace TUA.Entities
             if (smokeParticleSystem != null)
             {
                 smokeParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                _SetEmissionEnabled(true);
+                _emissionStopped = false;
                 smokeParticleSystem.Play();
             }
         }
@@ -44,8 +47,14 @@ namespace TUA.Entities
             if (!IsSpawned)
                 return;
 
-            var currentTime = Time.time;
-            var elapsedTime = currentTime - GetSpawnTime();
+            var spawnTime = GetSpawnTime();
+            var emissionDuration = GetEmissionDuration();
+            var totalLifetime = GetTotalLifetime();
+
+            if (spawnTime <= 0f || emissionDuration <= 0f || totalLifetime <= 0f)
+                return;
+
+            var elapsedTime = Time.time - spawnTime;
 
             if (IsServerSide)
             {
@@ -87,6 +96,8 @@ namespace TUA.Entities
             if (smokeParticleSystem != null)
             {
                 smokeParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                _SetEmissionEnabled(true);
+                _emissionStopped = false;
                 smokeParticleSystem.Play();
             }
         }
@@ -100,11 +111,11 @@ namespace TUA.Entities
                 return;
 
             var spawnTime = GetSpawnTime();
-            if (spawnTime <= 0f)
-            {
-                smokeParticleSystem.Play();
+            var emissionDuration = GetEmissionDuration();
+            var totalLifetime = GetTotalLifetime();
+
+            if (spawnTime <= 0f || emissionDuration <= 0f || totalLifetime <= 0f)
                 return;
-            }
 
             var elapsedTime = Time.time - spawnTime;
 
@@ -119,6 +130,8 @@ namespace TUA.Entities
             else
             {
                 smokeParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                _SetEmissionEnabled(true);
+                _emissionStopped = false;
                 
                 if (elapsedTime > 0.01f)
                 {
@@ -129,13 +142,21 @@ namespace TUA.Entities
             }
         }
 
-        private void _StopEmission()
+        private void _SetEmissionEnabled(bool enabled)
         {
             if (smokeParticleSystem == null)
                 return;
 
             var emission = smokeParticleSystem.emission;
-            emission.enabled = false;
+            emission.enabled = enabled;
+        }
+
+        private void _StopEmission()
+        {
+            if (smokeParticleSystem == null)
+                return;
+
+            _SetEmissionEnabled(false);
         }
         #endregion
     }

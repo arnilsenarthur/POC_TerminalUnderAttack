@@ -16,10 +16,7 @@ namespace TUA.Core
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_GetPlayerData can only be called on server side");
             
-            if (player == null)
-                return null;
-            
-            return _playerData.GetValueOrDefault(player.Uuid);
+            return player == null ? null : _playerData.GetValueOrDefault(player.Uuid);
         }
         
         public IPlayerData Client_GetPlayerData(GamePlayer player)
@@ -27,10 +24,7 @@ namespace TUA.Core
             if (IsServerSide)
                 throw new InvalidOperationException("Client_GetPlayerData can only be called on client side");
             
-            if (player == null)
-                return null;
-            
-            return _clientPlayerDataSnapshots.GetValueOrDefault(player.Uuid);
+            return player == null ? null : _clientPlayerDataSnapshots.GetValueOrDefault(player.Uuid);
         }
         
         public void Server_SetPlayerData(GamePlayer player, IPlayerData data)

@@ -13,8 +13,6 @@ namespace TUA.Items
         public float blindAngle = 45f;
         [Tooltip("Flash radius in Unity units.")]
         public float flashRadius = 10f;
-        [Tooltip("Fuse time in seconds before flash.")]
-        public float flashFuseTime = 1f;
         #endregion
     }
 }

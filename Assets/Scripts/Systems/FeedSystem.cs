@@ -76,6 +76,11 @@ namespace TUA.Systems
             Server_AddFeedInfoLocalized("feed.killed", duration, FeedMessageType.Kill, killerName, victimName);
         }
 
+        public static void InvokeKillEvent(GamePlayer killer, GamePlayer victim)
+        {
+            OnKillEvent?.Invoke(killer, victim);
+        }
+
         public static string GetPlayerColor(GamePlayer player)
         {
             return "#FFD700";
@@ -90,9 +95,6 @@ namespace TUA.Systems
         #region Private Methods
         private void _OnKillEvent(GamePlayer killer, GamePlayer victim)
         {
-            if (!IsServerSide)
-                return;
-
             Server_AddKillMessage(killer, victim);
         }
 

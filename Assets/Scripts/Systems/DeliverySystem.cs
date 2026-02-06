@@ -97,14 +97,13 @@ namespace TUA.Systems
             if (dataDriveSlot < 0)
                 return;
 
-            var feed = FeedSystem.Instance;
-            if (feed != null && inventoryHolder is PlayerEntity playerEntity)
+            if (FeedSystem.Instance != null && inventoryHolder is PlayerEntity playerEntity)
             {
                 var color = FeedSystem.GetPlayerColor(playerEntity.GamePlayer);
                 var diskColor = FeedSystem.ColorToHex(dataDriveItem!.targetColor);
                 var player = $"<color={color}>{playerEntity.GamePlayer.Name}</color>";
                 var disk = $"<color={diskColor}>{dataDriveItem.targetName}</color>";
-                feed.Server_AddFeedInfoLocalized("feed.delivered_disk", 3f, player, disk);
+                FeedSystem.Instance.Server_AddFeedInfoLocalized("feed.delivered_disk", 3f, player, disk);
             }
 
             var newInventory = inventory.Copy();
