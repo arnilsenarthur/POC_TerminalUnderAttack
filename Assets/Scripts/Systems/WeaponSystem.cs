@@ -21,10 +21,17 @@ namespace TUA.Systems
         public BulletTrace bulletTracePrefab;
         public GameObject hitEffectPrefab;
         public GameObject muzzleFlashPrefab;
+        [Header("Hit Effects")]
+        [Tooltip("Sound key to play when a bullet hits an IHealth entity")]
+        public string playerHitSoundKey;
+        [Header("Death Effects")]
+        [Tooltip("VFX prefab to spawn when a bullet kills an IHealth entity")]
+        public GameObject playerDeathVfxPrefab;
         [Header("References")]
         public Registry itemRegistry;
         #endregion
-        #region Fields
+
+        #region Private Fields
         private readonly HashSet<IWeaponUser> _registeredWeaponUsers = new();
         #endregion
         
@@ -53,63 +60,7 @@ namespace TUA.Systems
         }
         #endregion
        
-        #region Methods
-        private void _OnEntitySpawn(Entity entity)
-        {
-            if (entity is IWeaponUser weaponUser)
-            {
-                _RegisterWeaponUser(weaponUser);
-            }
-        }
-        
-        private void _OnEntityDespawn(Entity entity)
-        {
-            if (entity is IWeaponUser weaponUser)
-                _UnregisterWeaponUser(weaponUser);
-        }
-        
-        private void _RegisterWeaponUser(IWeaponUser weaponUser)
-        {
-            if (weaponUser == null || _registeredWeaponUsers.Contains(weaponUser))
-                return;
-            
-            _registeredWeaponUsers.Add(weaponUser);
-            weaponUser.OnRequestToShootEvent += _OnRequestToShoot;
-            weaponUser.OnRequestToReloadEvent += _OnRequestToReload;
-        }
-        
-        private void _UnregisterWeaponUser(IWeaponUser weaponUser)
-        {
-            if (weaponUser == null || !_registeredWeaponUsers.Contains(weaponUser))
-                return;
-            
-            _registeredWeaponUsers.Remove(weaponUser);
-            weaponUser.OnRequestToShootEvent -= _OnRequestToShoot;
-            weaponUser.OnRequestToReloadEvent -= _OnRequestToReload;
-        }
-        
-        private void _OnRequestToShoot(IWeaponUser weaponUser, Vector3 origin, Vector3 direction)
-        {
-            if (weaponUser == null)
-                return;
-            if (weaponUser.IsServerSide)
-                Server_Shoot(weaponUser, origin, direction);
-            else if (weaponUser.IsLocalOwned)
-                weaponUser.Client_Shoot(origin, direction);
-        }
-        
-        private void _OnRequestToReload(IWeaponUser weaponUser)
-        {
-            if (weaponUser == null)
-                return;
-            if (weaponUser.IsServerSide)
-                Server_Reload(weaponUser);
-            else if (weaponUser.IsLocalOwned)
-                weaponUser.Client_Reload();
-        }
-        #endregion
-        
-        #region Server API
+        #region Public Methods
         public bool Server_Shoot(IWeaponUser weaponUser, Vector3 origin, Vector3 direction)
         {
             if (weaponUser == null || !weaponUser.IsServerSide)
@@ -179,6 +130,7 @@ namespace TUA.Systems
             var spreadAngle = weaponItem.spreadAngle;
             var averageHitPoint = Vector3.zero;
             var hitPoints = new List<Vector3>();
+            var hitFlags = new List<bool>();
             
             for (var i = 0; i < projectileCount; i++)
             {
@@ -219,36 +171,41 @@ namespace TUA.Systems
                 }
                 
                 Vector3 hitPoint;
+                bool actuallyHit;
                 if (Physics.Raycast(origin, shotDirection, out var hit, range, hitLayers))
                 {
                     hitPoint = hit.point;
+                    actuallyHit = true;
                     Debug.Log($"[WeaponSystem] Server_Shoot: Raycast HIT - Origin: {origin}, Direction: {shotDirection}, Hit Point: {hitPoint}, Collider: {hit.collider.name} (Layer: {hit.collider.gameObject.layer}), Distance: {hit.distance:F2}m");
-                    _OnWeaponHit(weaponUser, hit, damage, weaponItem);
+                    _OnWeaponHit(weaponUser, hit, damage, weaponItem, origin, range);
                 }
                 else
                 {
                     hitPoint = origin + shotDirection * range;
+                    actuallyHit = false;
                     Debug.Log($"[WeaponSystem] Server_Shoot: Raycast MISS - Origin: {origin}, Direction: {shotDirection}, Max Range: {range}m, End Point: {hitPoint}");
                     _OnWeaponMiss(weaponUser, hitPoint);
                 }
                 
                 hitPoints.Add(hitPoint);
+                hitFlags.Add(actuallyHit);
                 averageHitPoint += hitPoint;
             }
             
             averageHitPoint /= projectileCount;
+            var averageActuallyHit = hitFlags.Count > 0 && hitFlags.Contains(true);
             
              var weaponExit = origin;   
             if (projectileCount > 1)
             {
-                foreach (var hitPoint in hitPoints)
+                for (var i = 0; i < hitPoints.Count; i++)
                 {
-                    RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, hitPoint);
+                    RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, hitPoints[i], hitFlags[i]);
                 }
             }
             else
             {
-                RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, averageHitPoint);
+                RpcClient_SpawnShotEffects(weaponUser.UserUuid, weaponExit, averageHitPoint, averageActuallyHit);
             }
             return true;
         }
@@ -286,6 +243,119 @@ namespace TUA.Systems
             weaponUser.Server_SetReloadProgress(0f);
             StartCoroutine(_ReloadCoroutine(weaponUser, weaponStack.item, inventory.selectedSlot, weaponItem));
             return true;
+        }
+
+        public void SpawnShotEffectsLocally(IWeaponUser weaponUser, Vector3 weaponExit, Vector3 hitPoint, bool actuallyHit)
+        {
+            if (weaponUser == null)
+                return;
+
+            var actualWeaponExit = weaponUser.GetCurrentWeaponExit();
+
+            if (AudioSystem.Instance && itemRegistry)
+            {
+                var inventory = weaponUser.Inventory;
+                var selectedItem = inventory?.GetSelectedItem();
+                if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.item))
+                {
+                    var weaponItem = itemRegistry.GetEntry<WeaponItem>(selectedItem.item);
+                    if (weaponItem && !string.IsNullOrEmpty(weaponItem.shotSoundKey))
+                    {
+                        AudioSystem.Instance.PlayLocal(weaponItem.shotSoundKey, actualWeaponExit, 1f, AudioCategory.Gameplay);
+                    }
+                }
+            }
+
+            if (muzzleFlashPrefab)
+            {
+                var muzzleFlash = Instantiate(muzzleFlashPrefab);
+                muzzleFlash.transform.position = actualWeaponExit;
+                var direction = (hitPoint - actualWeaponExit).normalized;
+                if (direction.magnitude > 0.1f)
+                    muzzleFlash.transform.rotation = Quaternion.LookRotation(direction);
+            }
+
+            if (bulletTracePrefab && actualWeaponExit != hitPoint)
+            {
+                var bulletTrace = Instantiate(bulletTracePrefab);
+                bulletTrace.Initialize(actualWeaponExit, hitPoint);
+            }
+
+            if (actuallyHit && hitEffectPrefab != null)
+            {
+                var hitEffect = Instantiate(hitEffectPrefab);
+                hitEffect.transform.position = hitPoint;
+            }
+        }
+
+        public void SpawnDeathEffectsLocally(Vector3 position, Vector3 normal)
+        {
+            if (playerDeathVfxPrefab != null)
+            {
+                var deathVfx = Instantiate(playerDeathVfxPrefab);
+                deathVfx.transform.position = position;
+
+                if (normal.magnitude > 0.1f)
+                {
+                    deathVfx.transform.rotation = Quaternion.LookRotation(normal);
+                }
+            }
+        }
+        #endregion
+
+        #region Private Methods
+        private void _OnEntitySpawn(Entity entity)
+        {
+            if (entity is IWeaponUser weaponUser)
+            {
+                _RegisterWeaponUser(weaponUser);
+            }
+        }
+
+        private void _OnEntityDespawn(Entity entity)
+        {
+            if (entity is IWeaponUser weaponUser)
+                _UnregisterWeaponUser(weaponUser);
+        }
+
+        private void _RegisterWeaponUser(IWeaponUser weaponUser)
+        {
+            if (weaponUser == null || _registeredWeaponUsers.Contains(weaponUser))
+                return;
+
+            _registeredWeaponUsers.Add(weaponUser);
+            weaponUser.OnRequestToShootEvent += _OnRequestToShoot;
+            weaponUser.OnRequestToReloadEvent += _OnRequestToReload;
+        }
+
+        private void _UnregisterWeaponUser(IWeaponUser weaponUser)
+        {
+            if (weaponUser == null || !_registeredWeaponUsers.Contains(weaponUser))
+                return;
+
+            _registeredWeaponUsers.Remove(weaponUser);
+            weaponUser.OnRequestToShootEvent -= _OnRequestToShoot;
+            weaponUser.OnRequestToReloadEvent -= _OnRequestToReload;
+        }
+
+        private void _OnRequestToShoot(IWeaponUser weaponUser, Vector3 origin, Vector3 direction)
+        {
+            if (weaponUser == null)
+                return;
+            if (weaponUser.IsServerSide)
+                Server_Shoot(weaponUser, origin, direction);
+            else if (weaponUser.IsLocalOwned)
+                weaponUser.Client_Shoot(origin, direction);
+        }
+
+        private void _OnRequestToReload(IWeaponUser weaponUser)
+        {
+            if (weaponUser == null)
+                return;
+            if (weaponUser.IsServerSide)
+                Server_Reload(weaponUser);
+            else if (weaponUser.IsLocalOwned)
+                weaponUser.Client_Reload();
         }
         
         private System.Collections.IEnumerator _ReloadCoroutine(IWeaponUser weaponUser, string weaponItemId, int selectedSlot, WeaponItem weaponItem)
@@ -353,14 +423,12 @@ namespace TUA.Systems
             
             weaponUser.Server_SetReloadProgress(0f);
         }
-        #endregion
         
-        #region Methods
         private void _GetShootingOriginAndDirection(IWeaponUser weaponUser, out Vector3 origin, out Vector3 direction)
         {
             origin = weaponUser.GetCurrentWeaponExit();
 
-            if (CameraSystem.Instance && CameraSystem.Instance.mainCamera )
+            if (CameraSystem.Instance && CameraSystem.Instance.mainCamera)
             {
                 direction = CameraSystem.Instance.mainCamera.transform.forward;
                 return;
@@ -375,23 +443,61 @@ namespace TUA.Systems
             direction = (weaponUser as MonoBehaviour)?.transform.forward ?? Vector3.forward;
         }
         
-        private void _OnWeaponHit(IWeaponUser shooter, RaycastHit hit, float damage, WeaponItem weaponItem)
+        private void _OnWeaponHit(IWeaponUser shooter, RaycastHit hit, float damage, WeaponItem weaponItem, Vector3 origin, float range)
         {
             var isHeadshot = headLayer != 0 && ((1 << hit.collider.gameObject.layer) & headLayer) != 0;
             var finalDamage = damage;
+
+            if (weaponItem != null && range > 0f && weaponItem.distanceDamageFalloffCurve != null && weaponItem.distanceDamageFalloffCurve.length > 0)
+            {
+                var distance = hit.distance;
+                var normalizedDistance = Mathf.Clamp01(distance / range);
+                var distanceMultiplier = weaponItem.distanceDamageFalloffCurve.Evaluate(normalizedDistance);
+                finalDamage *= distanceMultiplier;
+            }
             
             if (isHeadshot && weaponItem)
                 finalDamage *= weaponItem.headshotDamageMultiplier;
             
             var healthComponent = hit.collider.GetComponent<IHealth>();
+            healthComponent ??= hit.collider.GetComponentInParent<IHealth>();
+
             if (healthComponent != null)
-                healthComponent.Server_TakeDamage(finalDamage);
-            else
             {
-                var parentHealth = hit.collider.GetComponentInParent<IHealth>();
-                parentHealth?.Server_TakeDamage(finalDamage);
+                var healthBeforeDamage = healthComponent.CurrentHealth;
+                healthComponent.Server_TakeDamage(finalDamage);
+
+                if (!string.IsNullOrEmpty(playerHitSoundKey) && AudioSystem.Instance)
+                    AudioSystem.Instance.PlayBroadcast(playerHitSoundKey, hit.point, 1f, AudioCategory.Gameplay);
+
+                if (healthBeforeDamage > 0f && healthComponent.CurrentHealth <= 0f)
+                {
+                    RpcClient_SpawnDeathEffects(hit.point, hit.normal);
+
+                    if (GameWorld.Instance != null && FeedSystem.Instance != null)
+                    {
+                        GamePlayer killer = null;
+                        GamePlayer victim = null;
+
+                        if (shooter is Entity shooterEntity)
+                            killer = shooterEntity.GamePlayer;
+
+                        if (healthComponent is Entity victimEntity)
+                            victim = victimEntity.GamePlayer;
+                        else if (hit.collider != null)
+                        {
+                            var hitEntity = hit.collider.GetComponent<Entity>() ?? hit.collider.GetComponentInParent<Entity>();
+                            if (hitEntity != null)
+                                victim = hitEntity.GamePlayer;
+                        }
+
+                        if (killer != null || victim != null)
+                            FeedSystem.Instance.Server_AddKillMessage(killer, victim);
             }
         }
+            }
+        }
+
         private void _OnWeaponMiss(IWeaponUser shooter, Vector3 endPoint)
         {
         }
@@ -424,54 +530,12 @@ namespace TUA.Systems
                 return;
 
             if (newInventory.slots[newInventory.selectedSlot] is not WeaponItemStack selectedStack ||
-                selectedStack.item != weaponStack.item) return;
+                selectedStack.item != weaponStack.item)
+                return;
             
             selectedStack.ammo = weaponStack.ammo;
             selectedStack.maxAmmo = weaponStack.maxAmmo;
             weaponUser.Server_SetInventory(newInventory);
-        }
-        
-        public void SpawnShotEffectsLocally(IWeaponUser weaponUser, Vector3 weaponExit, Vector3 hitPoint)
-        {
-            if (weaponUser == null)
-                return;
-
-            var actualWeaponExit = weaponUser.GetCurrentWeaponExit();
-
-            if (AudioSystem.Instance && itemRegistry)
-            {
-                var inventory = weaponUser.Inventory;
-                var selectedItem = inventory?.GetSelectedItem();
-                if (selectedItem != null && !string.IsNullOrEmpty(selectedItem.item))
-                {
-                    var weaponItem = itemRegistry.GetEntry<WeaponItem>(selectedItem.item);
-                    if (weaponItem && !string.IsNullOrEmpty(weaponItem.shotSoundKey))
-                    {
-                        AudioSystem.Instance.PlayLocal(weaponItem.shotSoundKey, actualWeaponExit, 1f, AudioCategory.SFX);
-                    }
-                }
-            }
-
-            if (muzzleFlashPrefab)
-            {
-                var muzzleFlash = Instantiate(muzzleFlashPrefab);
-                muzzleFlash.transform.position = actualWeaponExit;
-                var direction = (hitPoint - actualWeaponExit).normalized;
-                if (direction.magnitude > 0.1f)
-                    muzzleFlash.transform.rotation = Quaternion.LookRotation(direction);
-            }
-            
-            if (bulletTracePrefab && actualWeaponExit != hitPoint)
-            {
-                var bulletTrace = Instantiate(bulletTracePrefab);
-                bulletTrace.Initialize(actualWeaponExit, hitPoint);
-            }
-
-            if (hitEffectPrefab == null) 
-                return;
-            
-            var hitEffect = Instantiate(hitEffectPrefab);
-            hitEffect.transform.position = hitPoint;
         }
         #endregion
     }

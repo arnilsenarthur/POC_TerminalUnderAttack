@@ -71,6 +71,15 @@ namespace TUA.UI
         private VisualElement _team2Players;
         private readonly Dictionary<HackingTarget, VisualElement> _hackingTargetDots = new();
         private readonly Dictionary<HackingTarget, Coroutine> _hackingFlashCoroutines = new();
+        private VisualElement _damageFlashOverlay;
+        private VisualElement _flashOverlay;
+        private float _previousHealth = -1f;
+        private Coroutine _damageFlashCoroutine;
+        private Coroutine _flashCoroutine;
+        private VisualElement _spectatorMenu;
+        private Button _spectatorPrevButton;
+        private Button _spectatorNextButton;
+        private Label _spectatorNameLabel;
         #endregion
         
         #region Unity Callbacks
@@ -78,6 +87,7 @@ namespace TUA.UI
         {
             base.OnEnable();
             LocalizationManager.OnLanguageChangeEvent += _OnLanguageChanged;
+            TUA.Systems.GadgetSystem.OnFlashEffectRequestEvent += _OnFlashEffectRequest;
             _InitializeUI();
         }
         
@@ -85,6 +95,7 @@ namespace TUA.UI
         {
             base.OnDisable();
             LocalizationManager.OnLanguageChangeEvent -= _OnLanguageChanged;
+            TUA.Systems.GadgetSystem.OnFlashEffectRequestEvent -= _OnFlashEffectRequest;
         }
         
         public void Update()
@@ -114,7 +125,13 @@ namespace TUA.UI
                 if (_currentHealthHolder != null)
                 {
                     _currentHealthHolder.OnHealthChangeEvent += _OnHealthChanged;
-                    _OnHealthChanged(_currentHealthHolder.CurrentHealth, _currentHealthHolder.MaxHealth);
+                    var initialHealth = _currentHealthHolder.CurrentHealth;
+                    _previousHealth = initialHealth; // Track initial health for damage detection
+                    _OnHealthChanged(initialHealth, _currentHealthHolder.MaxHealth);
+                }
+                else
+                {
+                    _previousHealth = -1f; // Reset tracking when no health holder
                 }
                 
                 if (_currentWeaponUser)
@@ -140,6 +157,7 @@ namespace TUA.UI
             _UpdateHackingTargets();
             _UpdateTeamsAndTargetsVisibility();
             _UpdateReloadProgress();
+            _UpdateSpectatorMenu();
         }
         #endregion
         
@@ -227,6 +245,59 @@ namespace TUA.UI
             _team2Players = matchDisplayContainer.Q<VisualElement>("Team2Players");
             _hackingTargetsRow = matchDisplayContainer.Q<VisualElement>("HackingTargetsRow");
             _hackingTargetsContainer = matchDisplayContainer.Q<VisualElement>("HackingTargetsContainer");
+            
+            // Create damage flash overlay
+            _damageFlashOverlay = _root.Q<VisualElement>("DamageFlashOverlay");
+            if (_damageFlashOverlay == null)
+            {
+                // Create damage flash overlay if it doesn't exist in UXML
+                _damageFlashOverlay = new VisualElement();
+                _damageFlashOverlay.name = "DamageFlashOverlay";
+                _damageFlashOverlay.style.position = Position.Absolute;
+                _damageFlashOverlay.style.left = 0;
+                _damageFlashOverlay.style.right = 0;
+                _damageFlashOverlay.style.top = 0;
+                _damageFlashOverlay.style.bottom = 0;
+                _damageFlashOverlay.style.backgroundColor = new StyleColor(Color.clear);
+                _damageFlashOverlay.style.display = DisplayStyle.None;
+                _damageFlashOverlay.pickingMode = PickingMode.Ignore;
+                // Insert at the beginning to ensure it's behind all other UI elements
+                _root.Insert(0, _damageFlashOverlay);
+            }
+
+            // Create flash overlay
+            _flashOverlay = _root.Q<VisualElement>("FlashOverlay");
+            if (_flashOverlay == null)
+            {
+                _flashOverlay = new VisualElement();
+                _flashOverlay.name = "FlashOverlay";
+                _flashOverlay.style.position = Position.Absolute;
+                _flashOverlay.style.left = 0;
+                _flashOverlay.style.right = 0;
+                _flashOverlay.style.top = 0;
+                _flashOverlay.style.bottom = 0;
+                _flashOverlay.style.backgroundColor = new StyleColor(Color.clear);
+                _flashOverlay.style.display = DisplayStyle.None;
+                _flashOverlay.pickingMode = PickingMode.Ignore;
+                _root.Insert(0, _flashOverlay);
+            }
+            
+            // Initialize spectator menu
+            _spectatorMenu = _root.Q<VisualElement>("SpectatorMenu");
+            if (_spectatorMenu != null)
+            {
+                _spectatorPrevButton = _spectatorMenu.Q<Button>("SpectatorPrev");
+                _spectatorNextButton = _spectatorMenu.Q<Button>("SpectatorNext");
+                _spectatorNameLabel = _spectatorMenu.Q<Label>("SpectatorName");
+                
+                if (_spectatorPrevButton != null)
+                    _spectatorPrevButton.clicked += _OnSpectatorPrevClicked;
+                
+                if (_spectatorNextButton != null)
+                    _spectatorNextButton.clicked += _OnSpectatorNextClicked;
+                
+                _spectatorMenu.style.display = DisplayStyle.None;
+            }
         }
         
         private void _UpdateHackingTargets()
@@ -405,7 +476,7 @@ namespace TUA.UI
             if (iconContainer == null || iconImage == null) 
                 return;
             
-            if (string.IsNullOrEmpty(stack.item))
+            if (stack == null || string.IsNullOrEmpty(stack.item))
             {
                 iconImage.style.backgroundImage = null;
                 const float slotHeight = 48f;
@@ -483,6 +554,10 @@ namespace TUA.UI
                     _ShowItemInfoLayout("Weapon");
                     _UpdateWeaponInfo(weaponStack, itemName);
                     break;
+                case GadgetItemStack gadgetStack:
+                    _ShowItemInfoLayout("Weapon");
+                    _UpdateGadgetInfo(gadgetStack, itemName);
+                    break;
                 default:
                     Item itemDef = null;
                     if (itemRegistry) itemDef = itemRegistry.GetEntry<Item>(selectedItem.item);
@@ -522,6 +597,14 @@ namespace TUA.UI
             _UpdateHackingProgress();
         }
         
+        private void _UpdateGadgetInfo(GadgetItemStack gadgetStack, string itemName)
+        {
+            if (_ammoCountText != null)
+                _ammoCountText.text = gadgetStack.count.ToString();
+            if (_itemNameText != null)
+                _itemNameText.text = itemName;
+        }
+
         private void _UpdateDefaultItemInfo(string itemName)
         {
             if (_ammoCountText != null)
@@ -584,7 +667,96 @@ namespace TUA.UI
         
         private void _OnHealthChanged(float currentHealth, float maxHealth)
         {
+            // Check if damage was taken (health decreased)
+            if (_previousHealth > 0f && currentHealth < _previousHealth)
+            {
+                _TriggerDamageFlash();
+            }
+            
+            _previousHealth = currentHealth;
             _UpdateHealthUI(currentHealth, maxHealth);
+        }
+        
+        private void _TriggerDamageFlash()
+        {
+            if (_damageFlashOverlay == null)
+                return;
+            
+            // Stop existing flash coroutine if running
+            if (_damageFlashCoroutine != null)
+            {
+                StopCoroutine(_damageFlashCoroutine);
+            }
+            
+            _damageFlashCoroutine = StartCoroutine(_FlashDamageEffect());
+        }
+        
+        private System.Collections.IEnumerator _FlashDamageEffect()
+        {
+            if (_damageFlashOverlay == null)
+                yield break;
+            
+            // Show overlay with red color
+            _damageFlashOverlay.style.display = DisplayStyle.Flex;
+            _damageFlashOverlay.style.backgroundColor = new StyleColor(new Color(1f, 0f, 0f, 0.3f)); // Red with 30% opacity
+            
+            // Quick flash - fade out over 0.2 seconds
+            float duration = 0.2f;
+            float elapsed = 0f;
+            
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = elapsed / duration;
+                float alpha = Mathf.Lerp(0.3f, 0f, progress);
+                _damageFlashOverlay.style.backgroundColor = new StyleColor(new Color(1f, 0f, 0f, alpha));
+                yield return null;
+            }
+            
+            // Hide overlay
+            _damageFlashOverlay.style.display = DisplayStyle.None;
+            _damageFlashOverlay.style.backgroundColor = new StyleColor(Color.clear);
+            _damageFlashCoroutine = null;
+        }
+
+        private void _OnFlashEffectRequest(float duration)
+        {
+            TriggerFlashEffect(duration);
+        }
+
+        public void TriggerFlashEffect(float duration)
+        {
+            if (_flashOverlay == null)
+                return;
+
+            if (_flashCoroutine != null)
+            {
+                StopCoroutine(_flashCoroutine);
+            }
+
+            _flashCoroutine = StartCoroutine(_FlashEffect(duration));
+        }
+
+        private System.Collections.IEnumerator _FlashEffect(float duration)
+        {
+            if (_flashOverlay == null)
+                yield break;
+
+            _flashOverlay.style.display = DisplayStyle.Flex;
+            _flashOverlay.style.backgroundColor = new StyleColor(new Color(1f, 1f, 1f, 1f));
+
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                var alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+                _flashOverlay.style.backgroundColor = new StyleColor(new Color(1f, 1f, 1f, alpha));
+                yield return null;
+            }
+
+            _flashOverlay.style.display = DisplayStyle.None;
+            _flashOverlay.style.backgroundColor = new StyleColor(Color.clear);
+            _flashCoroutine = null;
         }
         
         private void _OnReloadProgressChanged(float progress)
@@ -647,6 +819,63 @@ namespace TUA.UI
                 fill.style.width = Length.Percent(segmentFill * 100f);
                 fill.style.backgroundColor = new StyleColor(healthColor);
             }
+        }
+        
+        private void _UpdateSpectatorMenu()
+        {
+            if (_spectatorMenu == null)
+                return;
+
+            var localGamePlayer = GameWorld.Instance?.LocalGamePlayer;
+            var isSpectating = localGamePlayer != null && localGamePlayer.IsSpectator;
+
+            _spectatorMenu.style.display = isSpectating ? DisplayStyle.Flex : DisplayStyle.None;
+
+            if (!isSpectating)
+                return;
+
+            if (_spectatorNameLabel != null)
+            {
+                var targetEntity = GameWorld.Instance?.GetEntityByUuid<Entity>(localGamePlayer.SpectatorTargetUuid);
+                if (targetEntity != null && targetEntity.GamePlayer != null)
+                {
+                    var targetName = targetEntity.GamePlayer.Name ?? LocalizationManager.Get("hud.unknown");
+                    var spectatingText = LocalizationManager.Get("hud.spectating");
+                    _spectatorNameLabel.text = $"{spectatingText}: {targetName.ToUpperInvariant()}";
+                }
+                else
+                    _spectatorNameLabel.text = LocalizationManager.Get("hud.spectating_none");
+            }
+        }
+
+        private void _OnSpectatorPrevClicked()
+        {
+            var localGamePlayer = GameWorld.Instance?.LocalGamePlayer;
+            if (localGamePlayer == null || !localGamePlayer.IsSpectator)
+                return;
+
+            var gameMode = GameWorld.Instance?.GameMode;
+            if (gameMode == null)
+                return;
+
+            var prevTargetUuid = gameMode.OnGetPrevSpectateTarget(localGamePlayer, GameWorld.Instance);
+            if (prevTargetUuid.IsValid)
+                GameWorld.Instance.Client_RequestSpectatorTarget(prevTargetUuid);
+        }
+
+        private void _OnSpectatorNextClicked()
+        {
+            var localGamePlayer = GameWorld.Instance?.LocalGamePlayer;
+            if (localGamePlayer == null || !localGamePlayer.IsSpectator)
+                return;
+
+            var gameMode = GameWorld.Instance?.GameMode;
+            if (gameMode == null)
+                return;
+
+            var nextTargetUuid = gameMode.OnGetNextSpectateTarget(localGamePlayer, GameWorld.Instance);
+            if (nextTargetUuid.IsValid)
+                GameWorld.Instance.Client_RequestSpectatorTarget(nextTargetUuid);
         }
         #endregion
     }

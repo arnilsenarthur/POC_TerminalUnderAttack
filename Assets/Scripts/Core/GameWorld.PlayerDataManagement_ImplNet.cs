@@ -12,9 +12,11 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
-        #region Player Data Network Synchronization
+        #region Private Fields
         private readonly Dictionary<Uuid, IPlayerData> _clientPlayerDataSnapshots = new();
-        
+        #endregion
+
+        #region Private Methods
         private void Server_SendPlayerDataSnapshot(GamePlayer targetPlayer, GamePlayer requestingPlayer, NetworkConnection conn)
         {
             if (!IsServerSide || targetPlayer == null || requestingPlayer == null || conn == null || !conn.IsValid)
@@ -29,13 +31,13 @@ namespace TUA.Core
             {
                 var netWriter = new FishNetWriter(writer);
                 snapshot.Serialize(netWriter);
-                
+
                 var segment = writer.GetArraySegment();
                 var serializedData = new byte[segment.Count];
                 Array.Copy(segment.Array!, segment.Offset, serializedData, 0, segment.Count);
-                
+
                 var typeId = PlayerDataTypeRegistry.GetTypeId(snapshot.GetType()) ?? "default";
-                
+
                 RpcClient_PlayerDataSnapshot(conn, targetPlayer.Uuid, typeId, serializedData);
             }
             finally
@@ -56,12 +58,10 @@ namespace TUA.Core
 
                 var conn = Server_GetConnectionForPlayer(player);
                 if (conn != null && conn.IsValid)
-                {
                     Server_SendPlayerDataSnapshot(targetPlayer, player, conn);
-                }
             }
         }
-        
+
         private void Server_SendAllPlayerDataSnapshotsToNewPlayer(GamePlayer newPlayer, NetworkConnection conn)
         {
             if (!IsServerSide || newPlayer == null || conn == null || !conn.IsValid)
@@ -75,13 +75,14 @@ namespace TUA.Core
                         continue;
 
                     var playerData = Server_GetPlayerData(otherPlayer);
-                    if (playerData == null || playerData.GetType() != playerDataType) continue;
+                    if (playerData == null || playerData.GetType() != playerDataType)
+                        continue;
                     Server_SendPlayerDataSnapshot(otherPlayer, newPlayer, conn);
                     break;
                 }
             }
         }
-        
+
         private NetworkConnection Server_GetConnectionForPlayer(GamePlayer player)
         {
             if (!IsServerSide || player == null)
@@ -94,7 +95,7 @@ namespace TUA.Core
             }
             return null;
         }
-        
+
         [TargetRpc]
         private void RpcClient_PlayerDataSnapshot(NetworkConnection conn, Uuid playerUuid, string typeId, byte[] serializedData)
         {
@@ -120,9 +121,7 @@ namespace TUA.Core
                 var netReader = new FishNetReader(reader);
                 var snapshot = instance.Deserialize(netReader);
                 if (snapshot != null)
-                {
                     _clientPlayerDataSnapshots[playerUuid] = snapshot;
-                }
             }
             finally
             {

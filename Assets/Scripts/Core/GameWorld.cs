@@ -10,19 +10,27 @@ namespace TUA.Core
 {
     public partial class GameWorld : SingletonNetBehaviour<GameWorld>
     {   
+        #region Serialized Fields
         [Header("Game Modes")]
         [SerializeField]
         private GameMode[] gameModes;
 
         [SerializeField]
         private string currentGameModeId;
-        private GameMode _gameMode;
-        
-        private IGameSettings _gameSettings;
+        #endregion
 
+        #region Private Fields
+        private GameMode _gameMode;
+        private IGameSettings _gameSettings;
+        #endregion
+
+        #region Properties
         public IReadOnlyList<GamePlayer> AllPlayers { get; private set; }
         public GamePlayer LocalGamePlayer { get; private set; }
+        public GameMode GameMode => _gameMode;
+        #endregion
         
+        #region Public Methods
         public void Server_SetGameSettings(IGameSettings gameSettings)
         {
             if (!IsServerSide)
@@ -43,7 +51,7 @@ namespace TUA.Core
             if (localGamePlayer == null)
                 return null;
 
-            if(localGamePlayer.IsSpectator)
+            if (localGamePlayer.IsSpectator)
                 return GetEntityByUuid(localGamePlayer.SpectatorTargetUuid) as T;
 
             var playerEntities = GetEntitiesOwnedByPlayer(localGamePlayer);
@@ -51,26 +59,6 @@ namespace TUA.Core
                 return playerEntities[0] as T;
             
             return null;
-        }
-        
-        private GameMode GetConfiguredGameMode()
-        {
-            if (gameModes == null || gameModes.Length == 0)
-                return null;
-
-            if (!string.IsNullOrWhiteSpace(currentGameModeId)) 
-                return FindGameModeById(currentGameModeId);
-
-            if (gameModes.Length != 1 || !gameModes[0]) 
-                return null;
-            
-            Debug.LogWarning($"[GameWorld] `currentGameModeId` is empty; using the only configured GameMode ({gameModes[0].GetType().Name}, id='{gameModes[0].Id}').");
-            return gameModes[0];
-        }
-
-        private GameMode FindGameModeById(string id)
-        {
-            return string.IsNullOrWhiteSpace(id) ? null : gameModes?.Where(mode => mode).FirstOrDefault(mode => string.Equals(mode.Id, id, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Server_AddPlayer(object connection, GamePlayer player)
@@ -103,6 +91,14 @@ namespace TUA.Core
             Server_SetSpectatorTargetInternal(player, targetEntityUuid);
         }
 
+        public void Client_RequestSpectatorTarget(Uuid targetEntityUuid)
+        {
+            if (!IsClientSide)
+                return;
+
+            RpcClient_RequestSpectatorTarget(targetEntityUuid.high, targetEntityUuid.low);
+        }
+
         public void Client_RequestJoin(string username)
         {
             if (!IsClientSide)
@@ -111,6 +107,28 @@ namespace TUA.Core
                 return;
             }
             Client_RequestJoinInternal(username);
+        }
+        #endregion
+
+        #region Private Methods
+        private GameMode GetConfiguredGameMode()
+        {
+            if (gameModes == null || gameModes.Length == 0)
+                return null;
+
+            if (!string.IsNullOrWhiteSpace(currentGameModeId))
+                return FindGameModeById(currentGameModeId);
+
+            if (gameModes.Length != 1 || !gameModes[0])
+                return null;
+
+            Debug.LogWarning($"[GameWorld] `currentGameModeId` is empty; using the only configured GameMode ({gameModes[0].GetType().Name}, id='{gameModes[0].Id}').");
+            return gameModes[0];
+        }
+
+        private GameMode FindGameModeById(string id)
+        {
+            return string.IsNullOrWhiteSpace(id) ? null : gameModes?.Where(mode => mode).FirstOrDefault(mode => string.Equals(mode.Id, id, StringComparison.OrdinalIgnoreCase));
         }
 
         private static Uuid GenerateUuidFromString(string input)
@@ -126,5 +144,6 @@ namespace TUA.Core
                 
             return new Uuid(high, low);
         }
+        #endregion
     }
 }

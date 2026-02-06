@@ -12,76 +12,76 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd7f8288a03f8ad4f8ad68a49c001d2d, type: 3}
   m_Name: Settings_General
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Settings.SettingsAsset
-  _unlocalizedName: general
-  _fileName: settings_general
-  _autoLoadOnEnable: 1
-  _autoSaveOnChange: 1
-  _entries:
-  - _visible: 1
-    _type: 3
-    _key: language
-    _defaultInt: 0
-    _defaultFloat: 0
-    _defaultBool: 0
-    _defaultString: en_US
-    _intClamp: 0
-    _intMin: 0
-    _intMax: 0
-    _intStep: 1
-    _floatClamp: 0
-    _floatMin: 0
-    _floatMax: 0
-    _floatStep: 0
-    _staticStringOptions: []
-    _provider: {fileID: 11400000, guid: 696d99ff1656e894496cede59af0359b, type: 2}
-  - _visible: 1
-    _type: 0
-    _key: audio
-    _defaultInt: 0
-    _defaultFloat: 0
-    _defaultBool: 0
-    _defaultString: en_US
-    _intClamp: 0
-    _intMin: 0
-    _intMax: 0
-    _intStep: 1
-    _floatClamp: 0
-    _floatMin: 0
-    _floatMax: 0
-    _floatStep: 0
-    _staticStringOptions: []
-    _provider: {fileID: 11400000, guid: 696d99ff1656e894496cede59af0359b, type: 2}
-  - _visible: 1
-    _type: 2
-    _key: audio.volume.general
-    _defaultInt: 0
-    _defaultFloat: 0.5
-    _defaultBool: 0
-    _defaultString: en_US
-    _intClamp: 0
-    _intMin: 0
-    _intMax: 0
-    _intStep: 1
-    _floatClamp: 1
-    _floatMin: 0
-    _floatMax: 1
-    _floatStep: 0
-    _staticStringOptions: []
-    _provider: {fileID: 0}
-  - _visible: 1
-    _type: 2
-    _key: audio.volume.sfx
-    _defaultInt: 0
-    _defaultFloat: 0.5
-    _defaultBool: 0
-    _defaultString: en_US
-    _intClamp: 0
-    _intMin: 0
-    _intMax: 0
-    _intStep: 1
-    _floatClamp: 1
-    _floatMin: 0
-    _floatMax: 1
-    _floatStep: 0
-    _staticStringOptions: []
-    _provider: {fileID: 0}
+  unlocalizedName: general
+  fileName: settings_general
+  autoLoadOnEnable: 1
+  autoSaveOnChange: 1
+  entries:
+  - visible: 1
+    type: 3
+    key: language
+    defaultInt: 0
+    defaultFloat: 0
+    defaultBool: 0
+    defaultString: en_US
+    intClamp: 0
+    intMin: 0
+    intMax: 0
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 0
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 11400000, guid: 696d99ff1656e894496cede59af0359b, type: 2}
+  - visible: 1
+    type: 0
+    key: audio
+    defaultInt: 0
+    defaultFloat: 0
+    defaultBool: 0
+    defaultString: en_US
+    intClamp: 0
+    intMin: 0
+    intMax: 0
+    intStep: 1
+    floatClamp: 0
+    floatMin: 0
+    floatMax: 0
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 11400000, guid: 696d99ff1656e894496cede59af0359b, type: 2}
+  - visible: 1
+    type: 2
+    key: audio.volume.general
+    defaultInt: 0
+    defaultFloat: 0.5
+    defaultBool: 0
+    defaultString: en_US
+    intClamp: 0
+    intMin: 0
+    intMax: 0
+    intStep: 1
+    floatClamp: 1
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}
+  - visible: 1
+    type: 2
+    key: audio.volume.feed
+    defaultInt: 0
+    defaultFloat: 0.5
+    defaultBool: 0
+    defaultString: en_US
+    intClamp: 0
+    intMin: 0
+    intMax: 0
+    intStep: 1
+    floatClamp: 1
+    floatMin: 0
+    floatMax: 1
+    floatStep: 0
+    staticStringOptions: []
+    provider: {fileID: 0}

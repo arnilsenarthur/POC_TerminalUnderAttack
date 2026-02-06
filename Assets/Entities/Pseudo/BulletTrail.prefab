@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98de09b69568bdc4baf6670c6adaa912, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Systems.BulletTrace
-  secondsPerUnit: 0.1
+  secondsPerUnit: 0.01
   lineRenderer: {fileID: 5826859893276175337}
 --- !u!120 &5826859893276175337
 LineRenderer:

@@ -17,14 +17,78 @@ namespace TUA.Core
     
     public abstract class GameMode : MonoBehaviour
     {
+        #region Serialized Fields
         [FormerlySerializedAs("_id")]
         [Header("Game Mode")]
         [SerializeField]
         private string id;
+        #endregion
+
+        #region Properties
         public string Id => id;
-        
-        public virtual void OnWorldStart(GameWorld gameWorld)
+        #endregion
+
+        #region Public Methods
+        public abstract IPlayerData GetPlayerDataSnapshot(GamePlayer player, IPlayerData fullData, GamePlayer requestingPlayer, GameWorld gameWorld);
+
+        public virtual Uuid OnGetNextSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
         {
+            return default;
+        }
+
+        public virtual Uuid OnGetPrevSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
+        {
+            return default;
+        }
+        #endregion
+
+        #region Internal Methods
+        internal virtual void InternalOnWorldStart(GameWorld gameWorld)
+        {
+        }
+
+        internal virtual void InternalOnWorldEnd(GameWorld gameWorld)
+        {
+        }
+
+        internal virtual void InternalOnPlayerJoined(GamePlayer player, GameWorld gameWorld)
+        {
+        }
+
+        internal virtual GamePlayer InternalAcceptNewPlayer(Uuid playerUuid, string username, GameWorld gameWorld)
+        {
+            return new GamePlayer(playerUuid, username);
+        }
+
+        internal virtual void InternalOnTick(float deltaTime, GameWorld gameWorld)
+        {
+        }
+
+        internal virtual void InternalOnPlayerDataChanged(GamePlayer player, IPlayerData oldData, IPlayerData newData, GameWorld gameWorld)
+        {
+        }
+
+        internal virtual List<Team> InternalGetTeams(GameWorld gameWorld)
+        {
+            return null;
+        }
+
+        internal virtual void InternalSetGameSettings(IGameSettings gameSettings)
+        {
+        }
+        #endregion
+    }
+
+    public abstract class GameMode<Pd, Gs> : GameMode where Pd : struct, IPlayerData where Gs : struct, IGameSettings
+    {
+        #region Properties
+        public Gs GameSettings { get; internal set; }
+        #endregion
+
+        #region Public Methods
+        public virtual void OnWorldStart(GameWorld gameWorld, Gs gameSettings)
+        {
+            GameSettings = gameSettings;
         }
         
         public virtual void OnWorldEnd(GameWorld gameWorld)
@@ -44,39 +108,6 @@ namespace TUA.Core
         {
         }
         
-        public virtual void OnPlayerDataChanged(GamePlayer player, IPlayerData oldData, IPlayerData newData, GameWorld gameWorld)
-        {
-        }
-        
-        public abstract IPlayerData GetPlayerDataSnapshot(GamePlayer player, IPlayerData fullData, GamePlayer requestingPlayer, GameWorld gameWorld);
-        
-        public virtual List<Team> GetTeams(GameWorld gameWorld)
-        {
-            return null;
-        }
-    }
-    public abstract class GameMode<Pd, Gs> : GameMode where Pd : struct, IPlayerData where Gs : struct, IGameSettings
-    {
-        public Gs GameSettings { get; internal set; }
-        
-        public virtual void OnWorldStart(GameWorld gameWorld, Gs gameSettings)
-        {
-            GameSettings = gameSettings;
-            base.OnWorldStart(gameWorld);
-        }
-        
-        public override void OnWorldEnd(GameWorld gameWorld)
-        {
-        }
-        
-        public override void OnPlayerJoined(GamePlayer player, GameWorld gameWorld)
-        {
-        }
-        
-        public override void OnTick(float deltaTime, GameWorld gameWorld)
-        {
-        }
-        
         public virtual void OnPlayerDataChanged(GamePlayer player, Pd oldData, Pd newData, GameWorld gameWorld)
         {
         }
@@ -88,12 +119,53 @@ namespace TUA.Core
             return default;
         }
         
-        public override void OnPlayerDataChanged(GamePlayer player, IPlayerData oldData, IPlayerData newData, GameWorld gameWorld)
+        public virtual List<Team> GetTeams(GameWorld gameWorld)
+        {
+            return null;
+        }
+
+        public override Uuid OnGetNextSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
+        {
+            return base.OnGetNextSpectateTarget(spectator, gameWorld);
+        }
+
+        public override Uuid OnGetPrevSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
+        {
+            return base.OnGetPrevSpectateTarget(spectator, gameWorld);
+        }
+        #endregion
+
+        #region Internal Methods
+        internal override void InternalOnWorldStart(GameWorld gameWorld)
+        {
+            var settings = gameWorld.GetGameSettings<Gs>();
+            OnWorldStart(gameWorld, settings);
+        }
+
+        internal override void InternalOnWorldEnd(GameWorld gameWorld)
+        {
+            OnWorldEnd(gameWorld);
+        }
+
+        internal override void InternalOnPlayerJoined(GamePlayer player, GameWorld gameWorld)
+        {
+            OnPlayerJoined(player, gameWorld);
+        }
+
+        internal override GamePlayer InternalAcceptNewPlayer(Uuid playerUuid, string username, GameWorld gameWorld)
+        {
+            return AcceptNewPlayer(playerUuid, username, gameWorld);
+        }
+
+        internal override void InternalOnTick(float deltaTime, GameWorld gameWorld)
+        {
+            OnTick(deltaTime, gameWorld);
+        }
+
+        internal override void InternalOnPlayerDataChanged(GamePlayer player, IPlayerData oldData, IPlayerData newData, GameWorld gameWorld)
         {
             if (oldData is Pd typedOldData && newData is Pd typedNewData)
-            {
                 OnPlayerDataChanged(player, typedOldData, typedNewData, gameWorld);
-            }
         }
         
         public override IPlayerData GetPlayerDataSnapshot(GamePlayer player, IPlayerData fullData, GamePlayer requestingPlayer, GameWorld gameWorld)
@@ -106,9 +178,16 @@ namespace TUA.Core
             return null;
         }
         
-        public override List<Team> GetTeams(GameWorld gameWorld)
+        internal override List<Team> InternalGetTeams(GameWorld gameWorld)
         {
-            return null;
+            return GetTeams(gameWorld);
         }
+
+        internal override void InternalSetGameSettings(IGameSettings gameSettings)
+        {
+            if (gameSettings is Gs settings)
+                GameSettings = settings;
+        }
+        #endregion
     }
 }

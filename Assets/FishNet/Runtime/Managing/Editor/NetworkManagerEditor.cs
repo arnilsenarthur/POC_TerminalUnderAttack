@@ -18,13 +18,13 @@ namespace FishNet.Managing.Editing
 
         private void OnEnable()
         {
-            _logging = serializedObject.FindProperty("logging");
-            _refreshDefaultPrefabs = serializedObject.FindProperty("refreshDefaultPrefabs");
-            _runInBackground = serializedObject.FindProperty("runInBackground");
-            _dontDestroyOnLoad = serializedObject.FindProperty("dontDestroyOnLoad");
-            _persistence = serializedObject.FindProperty("persistence");
-            _spawnablePrefabs = serializedObject.FindProperty("spawnablePrefabs");
-            _objectPool = serializedObject.FindProperty("objectPool");
+            _logging = serializedObject.FindProperty("_logging");
+            _refreshDefaultPrefabs = serializedObject.FindProperty("_refreshDefaultPrefabs");
+            _runInBackground = serializedObject.FindProperty("_runInBackground");
+            _dontDestroyOnLoad = serializedObject.FindProperty("_dontDestroyOnLoad");
+            _persistence = serializedObject.FindProperty("_persistence");
+            _spawnablePrefabs = serializedObject.FindProperty("_spawnablePrefabs");
+            _objectPool = serializedObject.FindProperty("_objectPool");
         }
 
         public override void OnInspectorGUI()

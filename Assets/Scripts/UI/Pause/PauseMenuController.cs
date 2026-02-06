@@ -18,7 +18,7 @@ namespace TUA.UI
         [SerializeField] private SettingsMenuController settingsMenuController;
         #endregion
 
-        #region Fields
+        #region Private Fields
         private Button _closeButton;
         private Button _settingsButton;
         private Button _leaveMatchButton;
@@ -46,29 +46,82 @@ namespace TUA.UI
         }
         #endregion
 
-        #region Methods
-        private void _CancelPanelAnimations()
+        #region Public Methods
+        public override void SetVisible(bool visible)
         {
-            _scheduledOpenAnim?.Pause();
-            _scheduledOpenAnim = null;
+            if (Overlay == null)
+                return;
 
-            if (_panelAnim != null)
+            if (visible)
             {
-                try { _panelAnim.Stop(); }
-                catch
+                _CancelPanelAnimations();
+
+                Overlay.style.display = DisplayStyle.Flex;
+                Overlay.pickingMode = PickingMode.Position;
+
+                _UpdateRoomCode();
+
+                if (Backdrop != null)
+                    Backdrop.style.opacity = 1f;
+
+                if (Panel != null)
                 {
-                    // ignored
+                    Panel.style.opacity = 0f;
+                    Panel.style.scale = new Scale(new Vector3(0.9f, 0.9f, 1f));
+                    _scheduledOpenAnim = Panel.schedule.Execute(() =>
+                    {
+                        _panelAnim = Panel.experimental.animation
+                            .Start(0f, 1f, 300, (element, value) =>
+                        {
+                            element.style.opacity = value;
+                            float scale = 0.9f + (value * 0.1f);
+                            element.style.scale = new Scale(new Vector3(scale, scale, 1f));
+                        })
+                            .KeepAlive()
+                            .OnCompleted(() => _panelAnim = null);
+                    });
+                    _scheduledOpenAnim.ExecuteLater(1);
                 }
 
-                _panelAnim = null;
+                base.SetVisible(true);
+            }
+            else
+            {
+                _CancelPanelAnimations();
+
+                if (Backdrop != null)
+                    Backdrop.style.opacity = 0f;
+
+                if (Panel != null)
+                {
+                    _panelAnim = Panel.experimental.animation
+                        .Start(1f, 0f, 300, (element, value) =>
+                    {
+                        element.style.opacity = value;
+                        float scale = 0.9f + (value * 0.1f);
+                        element.style.scale = new Scale(new Vector3(scale, scale, 1f));
+                    })
+                        .KeepAlive()
+                        .OnCompleted(() =>
+                        {
+                            _panelAnim = null;
+                            base.SetVisible(false);
+                        });
+                }
+                else
+                {
+                    base.SetVisible(false);
+                }
             }
         }
+        #endregion
 
+        #region Protected Methods
         protected override VisualElement _FindOverlay()
         {
             return Root?.Q<VisualElement>("PauseOverlay");
         }
-        
+
         protected override void _InitializeElements()
         {
             Backdrop = Overlay?.Q<VisualElement>("Backdrop");
@@ -82,7 +135,7 @@ namespace TUA.UI
             _roomCodeLabel = Overlay?.Q<Label>("RoomCodeLabel");
             _roomCode = Overlay?.Q<Label>("RoomCode");
         }
-        
+
         protected override void _SetupCallbacks()
         {
             if (_closeButton != null)
@@ -99,11 +152,11 @@ namespace TUA.UI
             {
                 _settingsButton.clicked += () =>
                 {
-                    if (!settingsMenuController) 
+                    if (!settingsMenuController)
                         return;
-                    
+
                     var manager = WindowManager.FindInScene();
-                    if (manager == null)
+                    if (manager != null)
                         manager.OpenWindow(settingsMenuController);
                 };
             }
@@ -115,21 +168,39 @@ namespace TUA.UI
                 };
             }
         }
+        #endregion
+
+        #region Private Methods
+        private void _CancelPanelAnimations()
+        {
+            _scheduledOpenAnim?.Pause();
+            _scheduledOpenAnim = null;
+
+            if (_panelAnim != null)
+            {
+                try { _panelAnim.Stop(); }
+                catch
+                {
+                }
+
+                _panelAnim = null;
+            }
+        }
 
         private void _UpdateLocalizedText()
         {
             if (_titleLabel != null)
                 _titleLabel.text = LocalizationManager.Get("pause.title");
-            
+
             if (_settingsButton != null)
                 _settingsButton.text = LocalizationManager.Get("pause.settings");
-            
+
             if (_leaveMatchButton != null)
                 _leaveMatchButton.text = LocalizationManager.Get("pause.leave_match");
-            
+
             if (_resumeButton != null)
                 _resumeButton.text = LocalizationManager.Get("pause.close");
-            
+
             if (_roomCodeLabel != null)
                 _roomCodeLabel.text = LocalizationManager.Get("pause.room_code");
         }
@@ -138,80 +209,12 @@ namespace TUA.UI
         {
             var relayLobby = FindFirstObjectByType<RelayLobbyGUI>();
             string code = relayLobby ? relayLobby.GetRoomCode() : "";
-            
+
             if (_roomCodeContainer != null)
                 _roomCodeContainer.style.display = string.IsNullOrEmpty(code) ? DisplayStyle.None : DisplayStyle.Flex;
 
             if (_roomCode != null)
                 _roomCode.text = code;
-        }
-
-        public override void SetVisible(bool visible)
-        {
-            if (Overlay == null) 
-                return;
-
-            if (visible)
-            {
-                _CancelPanelAnimations();
-
-                Overlay.style.display = DisplayStyle.Flex;
-                Overlay.pickingMode = PickingMode.Position;
-                
-                _UpdateRoomCode();
-                
-                if (Backdrop != null)
-                    Backdrop.style.opacity = 1f;
-         
-                if (Panel != null)
-                {
-                    Panel.style.opacity = 0f;
-                    Panel.style.scale = new Scale(new Vector3(0.9f, 0.9f, 1f));
-                    _scheduledOpenAnim = Panel.schedule.Execute(() =>
-                    {
-                        _panelAnim = Panel.experimental.animation
-                            .Start(0f, 1f, 300, (element, value) =>
-                        {
-                            element.style.opacity = value;
-                            float scale = 0.9f + (value * 0.1f); 
-                            element.style.scale = new Scale(new Vector3(scale, scale, 1f));
-                        })
-                            .KeepAlive()
-                            .OnCompleted(() => _panelAnim = null);
-                    });
-                    _scheduledOpenAnim.ExecuteLater(1);
-                }
-
-                base.SetVisible(true);
-            }
-            else
-            {
-                _CancelPanelAnimations();
-                
-                if (Backdrop != null)
-                    Backdrop.style.opacity = 0f;
-                
-                if (Panel != null)
-                {
-                    _panelAnim = Panel.experimental.animation
-                        .Start(1f, 0f, 300, (element, value) =>
-                    {
-                        element.style.opacity = value;
-                        float scale = 0.9f + (value * 0.1f); 
-                        element.style.scale = new Scale(new Vector3(scale, scale, 1f));
-                    })
-                        .KeepAlive()
-                        .OnCompleted(() =>
-                        {
-                            _panelAnim = null;
-                            base.SetVisible(false);
-                        });
-                }
-                else
-                {
-                    base.SetVisible(false);
-                }
-            }
         }
         #endregion
     }

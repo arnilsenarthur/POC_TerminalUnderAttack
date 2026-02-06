@@ -8,6 +8,7 @@ namespace TUA.Entities
 {
     public partial class PlayerEntity
     {
+        #region Private Fields
         private readonly SyncVar<Inventory> _inventory = new(
             new Inventory(),
             new SyncTypeSettings
@@ -40,7 +41,9 @@ namespace TUA.Entities
                 ReadPermission = ReadPermission.Observers,
                 SendRate = 0f,
             });
-    
+        #endregion
+
+        #region Unity Callbacks
         public override void OnStartServer()
         {
             base.OnStartServer();
@@ -59,9 +62,9 @@ namespace TUA.Entities
             CurrentHealth = _health.Value;
             MaxHealth = _maxHealth.Value;
             Inventory = _inventory.Value;
-            
+
             GameWorld.OnTickEvent += _OnTick;
-            
+
             _inventory.OnChange += (_, next, _) =>
             {
                 Inventory = next;
@@ -81,11 +84,11 @@ namespace TUA.Entities
             {
                 ReloadProgress = next;
                 OnReloadProgressChangeEvent?.Invoke(next);
-                
+
                 if (next <= 0)
                     _CancelReloadSound();
             };
-            
+
             UpdateVisualItem();
             ApplyAimingState(IsAiming);
         }
@@ -95,7 +98,9 @@ namespace TUA.Entities
             base.OnStopClient();
             GameWorld.OnTickEvent -= _OnTick;
         }
+        #endregion
 
+        #region Private Methods
         private void _OnTick(float deltaTime)
         {
             if (IsLocalOwned)
@@ -122,7 +127,7 @@ namespace TUA.Entities
             health = Mathf.Clamp(health, 0f, MaxHealth);
             _health.Value = health;
             CurrentHealth = health;
-            
+
             if (previousHealth > 0f && health <= 0f)
                 OnDeathEvent?.Invoke();
         }
@@ -148,30 +153,46 @@ namespace TUA.Entities
         }
 
         [ServerRpc(RequireOwnership = true)]
-        // ReSharper disable once UnusedParameter.Local
         private void RpcServer_UpdatePlayerState(PlayerState state, Channel channel = Channel.Unreliable)
         {
             if (!IsServerSide)
                 throw new System.InvalidOperationException("RpcServer_UpdatePlayerState can only be called on server side");
-            
+
             RpcClient_PlayerStateUpdate(state, channel);
         }
 
         [ObserversRpc(ExcludeServer = false)]
-        // ReSharper disable once UnusedParameter.Local
         private void RpcClient_PlayerStateUpdate(PlayerState state, Channel channel = Channel.Unreliable)
         {
             if (IsLocalOwned)
                 return;
-            
+
             var viewDirChanged = _viewDirection != state.viewDirection;
             var positionChanged = Position != state.position;
             var velocityChanged = InternalVelocity != state.velocity;
             var aimingChanged = _isAiming != state.isAiming;
             var firingChanged = _isFiring != state.isFiring;
             var sneakingChanged = _isSneaking != state.isSneaking;
-   
-            _viewDirection = state.viewDirection;
+
+            if (viewDirChanged)
+            {
+                var currentYaw = _viewDirection.x;
+                var currentPitch = _viewDirection.y;
+                var targetYaw = state.viewDirection.x;
+                var targetPitch = state.viewDirection.y;
+
+                var yawDiff = Mathf.DeltaAngle(currentYaw, targetYaw);
+                var pitchDiff = targetPitch - currentPitch;
+
+                var lerpSpeed = 20f;
+                var newYaw = Mathf.LerpAngle(currentYaw, currentYaw + yawDiff, Time.deltaTime * lerpSpeed);
+                var newPitch = Mathf.Lerp(currentPitch, targetPitch, Time.deltaTime * lerpSpeed);
+
+                _viewDirection = new Vector2(newYaw, newPitch);
+                OnViewDirectionChangeEvent?.Invoke(_viewDirection);
+                OnViewDirectionChanged(_viewDirection);
+            }
+
             Position = state.position;
             InternalVelocity = state.velocity;
             _isAiming = state.isAiming;
@@ -179,39 +200,33 @@ namespace TUA.Entities
             _isSneaking = state.isSneaking;
             IsScoped = state.isScoped;
             SyncedRecoilOffset = state.recoilComputed;
-            
+
             if (positionChanged)
                 transform.position = state.position;
-     
-            if (viewDirChanged)
-            {
-                OnViewDirectionChangeEvent?.Invoke(state.viewDirection);
-                OnViewDirectionChanged(state.viewDirection);
-            }
-            
+
             if (positionChanged)
             {
                 OnPositionChangeEvent?.Invoke(state.position);
                 OnPositionChanged(state.position);
             }
-            
+
             if (velocityChanged)
             {
                 OnVelocityChangeEvent?.Invoke(state.velocity);
                 OnVelocityChanged(state.velocity);
             }
-            
+
             if (aimingChanged)
             {
                 OnIsAimingChangeEvent?.Invoke(state.isAiming);
                 OnAimingChanged(state.isAiming);
             }
-            
+
             if (firingChanged)
             {
                 OnIsFiringChangeEvent?.Invoke(state.isFiring);
             }
-            
+
             if (sneakingChanged)
             {
                 OnIsSneakingChangeEvent?.Invoke(state.isSneaking);
@@ -225,16 +240,25 @@ namespace TUA.Entities
             if (!IsServerSide)
                 throw new System.InvalidOperationException("RpcClient_SelectSlot can only be called on server side");
             var inventory = _inventory.Value;
-            
+
             if (inventory == null)
                 return;
 
-            if (!inventory.CanSelectSlot(slotIndex)) 
+            if (!inventory.CanSelectSlot(slotIndex))
                 return;
-            
+
             var newInventory = inventory.Copy();
             newInventory.selectedSlot = slotIndex;
             _inventory.Value = newInventory;
+        }
+
+        [ServerRpc(RequireOwnership = true)]
+        private void RpcClient_ThrowGadget(Vector3 origin, Vector3 direction, bool isDrop)
+        {
+            if (!IsServerSide)
+                throw new System.InvalidOperationException("RpcClient_ThrowGadget can only be called on server side");
+
+            OnRequestToThrowGadgetEvent?.Invoke(this, origin, direction, isDrop);
         }
 
         [ServerRpc(RequireOwnership = true)]
@@ -252,5 +276,6 @@ namespace TUA.Entities
                 throw new System.InvalidOperationException("RpcClient_Reload can only be called on server side");
             OnRequestToReloadEvent?.Invoke(this);
         }
+        #endregion
     }
 }

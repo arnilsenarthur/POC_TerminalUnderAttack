@@ -14,15 +14,18 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
+        #region Private Fields
         private readonly SyncList<GamePlayer> _allPlayers = new();
         private readonly Dictionary<object, GamePlayer> _connectionToPlayer = new();
         private Uuid _localPlayerUuid;
+        #endregion
         
+        #region Unity Callbacks
         protected override void Awake()
         {
             base.Awake();
             AllPlayers = _allPlayers;
-            _allPlayers.OnChange += (_,_,_,_,_) =>
+            _allPlayers.OnChange += (_, _, _, _, _) =>
             {
                 if (!IsClientSide || !_localPlayerUuid.IsValid)
                     return;
@@ -45,6 +48,7 @@ namespace TUA.Core
             networkManager.ServerManager.OnServerConnectionState += _OnServerConnectionState;
             networkManager.ServerManager.OnRemoteConnectionState += _OnRemoteConnectionState;
         }
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -58,62 +62,9 @@ namespace TUA.Core
             networkManager.ServerManager.OnServerConnectionState -= _OnServerConnectionState;
             networkManager.ServerManager.OnRemoteConnectionState -= _OnRemoteConnectionState;
             if (networkManager.ServerManager.Objects != null)
-            {
                 networkManager.ServerManager.Objects.OnPreDestroyClientObjects -= _OnPreDestroyClientObjects;
             }
-        }
-        private void _OnServerConnectionState(ServerConnectionStateArgs args)
-        {
-            switch (args.ConnectionState)
-            {
-                case LocalConnectionState.Started:
-                    if (!gameObject.activeSelf)
-                        gameObject.SetActive(true);
-                    InitializeTickSystem();
-                    if (!_gameMode)
-                    {
-                        _gameMode = GetConfiguredGameMode();
-                        if (!_gameMode)
-                            Debug.LogError($"[GameWorld] Could not resolve a GameMode. Assign `gameModes` on GameWorld and set `currentGameModeId` to match one of them.");
-                        else
-                        {
-                            if (_gameSettings != null)
-                            {
-                                var gameModeType = _gameMode.GetType();
-                                var baseType = gameModeType.BaseType;
-                                if (baseType != null && baseType.IsGenericType && baseType.GetGenericTypeDefinition() == typeof(GameMode<,>))
-                                {
-                                    var method = baseType.GetMethod("OnWorldStart", new[] { typeof(GameWorld), baseType.GetGenericArguments()[1] });
-                                    if (method != null)
-                                    {
-                                        method.Invoke(_gameMode, new object[] { this, _gameSettings });
-                                    }
-                                    else
-                                    {
-                                        _gameMode.OnWorldStart(this);
-                                    }
-                                }
-                                else
-                                {
-                                    _gameMode.OnWorldStart(this);
-                                }
-                            }
-                            else
-                            {
-                                _gameMode.OnWorldStart(this);
-                            }
-                            Server_SetGameModeRunning(true);
-                        }
-                    }
-                    break;
-                case LocalConnectionState.Stopped:
-                    Server_SetGameModeRunning(false);
-                    _gameMode?.OnWorldEnd(this);
-                    _gameMode = null;
-                    CleanupTickSystem();
-                    break;
-            }
-        }
+
         public override void OnStartClient()
         {
             base.OnStartClient();
@@ -133,16 +84,122 @@ namespace TUA.Core
             if (!string.IsNullOrEmpty(playerName))
                 Client_RequestJoin(playerName);
         }
+
         public override void OnStopClient()
         {
             base.OnStopClient();
             CleanupTickSystem();
             _allPlayers.OnChange -= _OnPlayersChanged;
         }
+        #endregion
+
+        #region Public Methods
+        [ServerRpc(RequireOwnership = false)]
+        private void RpcClient_RequestSpectatorTarget(int targetUuidHigh, int targetUuidLow, NetworkConnection conn = null)
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("RpcClient_RequestSpectatorTarget can only be called on server side");
+
+            if (conn == null || !_connectionToPlayer.TryGetValue(conn, out var player))
+                return;
+
+            var targetUuid = new Uuid(targetUuidHigh, targetUuidLow);
+            Server_SetSpectatorTargetInternal(player, targetUuid);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RpcClient_RequestJoin(string uuidString, string username, NetworkConnection conn = null)
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("RpcClient_RequestJoin can only be called on server side");
+
+            if (conn == null || !conn.IsValid)
+            {
+                Debug.LogWarning("[GameWorld] Invalid connection in join request");
+                return;
+            }
+
+            if (!Uuid.TryParse(uuidString, out var playerUuid))
+            {
+                Debug.LogWarning($"[GameWorld] Invalid UUID string from connection {conn.ClientId}: {uuidString}");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(username) || username.Length > 50)
+            {
+                Debug.LogWarning($"[GameWorld] Invalid username from connection {conn.ClientId}: {username}");
+                return;
+            }
+
+            var expectedUuid = GenerateUuidFromString(username);
+            if (playerUuid != expectedUuid)
+            {
+                Debug.LogWarning($"[GameWorld] UUID mismatch for username '{username}' from connection {conn.ClientId}. Expected: {expectedUuid}, Got: {playerUuid}");
+                playerUuid = expectedUuid;
+            }
+
+            var existingPlayer = _allPlayers.FirstOrDefault(player => player != null && player.Uuid == playerUuid);
+            GamePlayer gamePlayer;
+
+            if (existingPlayer != null)
+            {
+                existingPlayer.Name = username;
+                existingPlayer.IsOnline = true;
+                gamePlayer = existingPlayer;
+            }
+            else
+                gamePlayer = new GamePlayer(playerUuid, username);
+            Server_AddPlayerInternal(conn, gamePlayer);
+        }
+
+        [ObserversRpc(ExcludeServer = false)]
+        private void RpcClient_PlayerTeamChanged(Uuid playerUuid, string teamName)
+        {
+            foreach (var gp in _allPlayers.Where(gp => gp != null && gp.Uuid == playerUuid))
+            {
+                gp.SetTeamName(teamName);
+                return;
+            }
+        }
+        #endregion
+
+        #region Private Methods
+        private void _OnServerConnectionState(ServerConnectionStateArgs args)
+        {
+            switch (args.ConnectionState)
+            {
+                case LocalConnectionState.Started:
+                    if (!gameObject.activeSelf)
+                        gameObject.SetActive(true);
+                    InitializeTickSystem();
+                    if (!_gameMode)
+                    {
+                        _gameMode = GetConfiguredGameMode();
+                        if (!_gameMode)
+                            Debug.LogError($"[GameWorld] Could not resolve a GameMode. Assign `gameModes` on GameWorld and set `currentGameModeId` to match one of them.");
+                        else
+                        {
+                            if (_gameSettings != null)
+                                _gameMode.InternalSetGameSettings(_gameSettings);
+                            _gameMode.InternalOnWorldStart(this);
+                            Server_SetGameModeRunning(true);
+                        }
+                    }
+                    break;
+                case LocalConnectionState.Stopped:
+                    Server_SetGameModeRunning(false);
+                    _gameMode?.InternalOnWorldEnd(this);
+                    _gameMode = null;
+                    CleanupTickSystem();
+                    break;
+            }
+        }
+
         private void _OnRemoteConnectionState(object connection, RemoteConnectionStateArgs args)
         {
             if (!IsServerSide)
                 return;
+
             switch (args.ConnectionState)
             {
                 case RemoteConnectionState.Started:
@@ -159,10 +216,12 @@ namespace TUA.Core
                     throw new ArgumentOutOfRangeException();
             }
         }
+
         private void _OnPreDestroyClientObjects(object connection)
         {
             if (!IsServerSide)
                 return;
+
             if (connection is not NetworkConnection { IsValid: true } netConn) 
                 return;
             
@@ -205,7 +264,7 @@ namespace TUA.Core
             _connectionToPlayer[connection] = player;
             
             Server_SendAllPlayerDataSnapshotsToNewPlayer(player, netConn);
-            _gameMode?.OnPlayerJoined(player, this);
+            _gameMode?.InternalOnPlayerJoined(player, this);
         }
         
         private void Server_RemovePlayerInternal(object connection)
@@ -290,51 +349,6 @@ namespace TUA.Core
             else
                 Debug.LogWarning($"[GameWorld] Still not ready after delay. IsClientSide: {IsClientSide}, IsServerSide: {IsServerSide}, IsSpawned: {IsSpawned}");
         }
-        
-        [ServerRpc(RequireOwnership = false)]
-        private void RpcClient_RequestJoin(string uuidString, string username, NetworkConnection conn = null)
-        {
-            if (!IsServerSide)
-                throw new InvalidOperationException("RpcClient_RequestJoin can only be called on server side");
-            
-            if (conn == null || !conn.IsValid)
-            {
-                Debug.LogWarning("[GameWorld] Invalid connection in join request");
-                return;
-            }
-            
-            if (!Uuid.TryParse(uuidString, out var playerUuid))
-            {
-                Debug.LogWarning($"[GameWorld] Invalid UUID string from connection {conn.ClientId}: {uuidString}");
-                return;
-            }
-            
-            if (string.IsNullOrEmpty(username) || username.Length > 50)
-            {
-                Debug.LogWarning($"[GameWorld] Invalid username from connection {conn.ClientId}: {username}");
-                return;
-            }
-            
-            var expectedUuid = GenerateUuidFromString(username);
-            if (playerUuid != expectedUuid)
-            {
-                Debug.LogWarning($"[GameWorld] UUID mismatch for username '{username}' from connection {conn.ClientId}. Expected: {expectedUuid}, Got: {playerUuid}");
-                playerUuid = expectedUuid;
-            }
-            
-            var existingPlayer = _allPlayers.FirstOrDefault(player => player != null && player.Uuid == playerUuid);
-            GamePlayer gamePlayer;
-            
-            if (existingPlayer != null)
-            {
-                existingPlayer.Name = username;
-                existingPlayer.IsOnline = true;
-                gamePlayer = existingPlayer;
-            }
-            else
-                gamePlayer = new GamePlayer(playerUuid, username);
-            Server_AddPlayerInternal(conn, gamePlayer);
-        }
 
         private void Server_SetPlayerTeamInternal(GamePlayer player, string teamName)
         {
@@ -352,15 +366,6 @@ namespace TUA.Core
                 return;
             }
         }
-
-        [ObserversRpc(ExcludeServer = false)]
-        private void RpcClient_PlayerTeamChanged(Uuid playerUuid, string teamName)
-        {
-            foreach (var gp in _allPlayers.Where(gp => gp != null && gp.Uuid == playerUuid))
-            {
-                gp.SetTeamName(teamName);
-                return;
-            }
-        }
+        #endregion
     }
 }

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e42d1bd204fcb847b8d8766c6e79712, type: 3}
+  m_Name: Flashbang_Gadget_Item
+  m_EditorClassIdentifier: TUA.Items::TUA.Items.FlashItem
+  id: gadget:flash
+  sprite: {fileID: 21300000, guid: ffbf68e8814b82648b5807c8badc5607, type: 3}
+  visualPrefab: {fileID: 9151604153919071229, guid: 480a72e76add0e54d83beee94ab98b60, type: 3}
+  throwVelocity: 25
+  dropForce: 10
+  effectPrefab: {fileID: 7177991128484655659, guid: 0fc00a93082b28f40891bf127277f076, type: 3}
+  throwSoundKey: gadget_throw
+  impactSoundKey: gadget_hit
+  effectSoundKey: gadget_flashbang_explode
+  blindDuration: 3
+  blindAngle: 45
+  flashRadius: 10
+  flashFuseTime: 0

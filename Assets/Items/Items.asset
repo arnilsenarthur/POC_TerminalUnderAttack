@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6b46e875e184fa45855eccb7061d180, type: 3}
   m_Name: Items
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Data.Registry
-  _entries:
+  entries:
   - {fileID: 11400000, guid: c8076babbbf7730408d3ba28cdd3f05e, type: 2}
   - {fileID: 11400000, guid: 98b8dfc36c53e9f47bf01f8f84c26970, type: 2}
   - {fileID: 11400000, guid: 2f3334d8ae2edab4c95051bd9e08e9a2, type: 2}
@@ -21,3 +21,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c3348188c0b703f4ea1e35a11798324b, type: 2}
   - {fileID: 11400000, guid: d84d68386c7b0c74bb7f88e7616234c7, type: 2}
   - {fileID: 11400000, guid: 6817acfdc90e8604f8af7fde5cd3d239, type: 2}
+  - {fileID: 11400000, guid: 0b617efe542848f4bbbe8cd40b296a5a, type: 2}
+  - {fileID: 11400000, guid: 240260790c4186d40a9fb3e07999843b, type: 2}
+  - {fileID: 11400000, guid: 199afff2ea60fa448b798a77bcbbf507, type: 2}

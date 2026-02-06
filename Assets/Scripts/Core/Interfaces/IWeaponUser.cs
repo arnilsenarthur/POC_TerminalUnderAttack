@@ -18,6 +18,7 @@ namespace TUA.Core.Interfaces
         void Server_SetReloadProgress(float progress);
         event Action<IWeaponUser, Vector3, Vector3> OnRequestToShootEvent;
         event Action<IWeaponUser> OnRequestToReloadEvent;
+        event Action<IWeaponUser, Vector3, Vector3, bool> OnRequestToThrowGadgetEvent;
         void Server_ApplyRecoil();
         float Server_GetRecoilSpreadMultiplier();
         float GetScopeBlend();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using TUA.I18n;
 using TUA.Settings;
@@ -474,9 +475,15 @@ namespace TUA.UI
                 }
             }
 
+            if (field != null)
+            {
+                field.isDelayed = true;
+            }
+
             void SetUI(int v)
             {
-                field?.SetValueWithoutNotify(v);
+                if (field != null && !field.isReadOnly)
+                    field.SetValueWithoutNotify(v);
                 slider?.SetValueWithoutNotify(v);
             }
 
@@ -485,28 +492,57 @@ namespace TUA.UI
 
             var step = Mathf.Max(1, entry.IntStep);
             var baseValue = hasClamp ? entry.IntMin : 0;
+            var isFieldFocused = false;
 
             slider?.RegisterValueChangedCallback(evt =>
             {
+                if (isFieldFocused)
+                    return;
+
                 var v = evt.newValue;
                 if (step > 1)
                     v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
                 page.SetInt(entry.Key, v);
                 entry.Provider?.ApplyValue(SettingValue.FromInt(v));
-                // Update field to keep in sync
                 field?.SetValueWithoutNotify(v);
             });
 
             if (field != null)
             {
+                field.RegisterCallback<FocusInEvent>(_ => isFieldFocused = true);
+                field.RegisterCallback<FocusOutEvent>(evt =>
+                {
+                    isFieldFocused = false;
+                    var text = field.text;
+                    if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                    {
+                        var v = parsed;
+                        if (hasClamp)
+                            v = Mathf.Clamp(v, entry.IntMin, entry.IntMax);
+                        if (step > 1)
+                            v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
+                        page.SetInt(entry.Key, v);
+                        entry.Provider?.ApplyValue(SettingValue.FromInt(v));
+                        SetUI(v);
+                    }
+                    else
+                    {
+                        SetUI(page.GetInt(entry.Key, entry.DefaultInt));
+                    }
+                });
+
                 field.RegisterValueChangedCallback(evt =>
                 {
+                    if (!isFieldFocused)
+                        return;
+
                     var v = evt.newValue;
+                    if (hasClamp)
+                        v = Mathf.Clamp(v, entry.IntMin, entry.IntMax);
                     if (step > 1)
                         v = baseValue + Mathf.RoundToInt((v - baseValue) / (float)step) * step;
                     page.SetInt(entry.Key, v);
                     entry.Provider?.ApplyValue(SettingValue.FromInt(v));
-                    // Update slider to keep in sync
                     slider?.SetValueWithoutNotify(v);
                 });
             }
@@ -545,9 +581,15 @@ namespace TUA.UI
                 }
             }
 
+            if (field != null)
+            {
+                field.isDelayed = true;
+            }
+
             void SetUI(float v)
             {
-                field?.SetValueWithoutNotify(v);
+                if (field != null && !field.isReadOnly)
+                    field.SetValueWithoutNotify(v);
                 slider?.SetValueWithoutNotify(v);
             }
 
@@ -556,6 +598,7 @@ namespace TUA.UI
 
             var step = Mathf.Max(0f, entry.FloatStep);
             var baseValue = hasClamp ? entry.FloatMin : 0f;
+            var isFieldFocused = false;
 
             float Snap(float v)
             {
@@ -565,19 +608,52 @@ namespace TUA.UI
 
             slider?.RegisterValueChangedCallback(evt =>
             {
+                if (isFieldFocused)
+                    return;
+
                 var v = Snap(evt.newValue);
                 page.SetFloat(entry.Key, v);
                 entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
                 field?.SetValueWithoutNotify(v);
             });
 
-            field?.RegisterValueChangedCallback(evt =>
+            if (field != null)
             {
-                var v = Snap(evt.newValue);
-                page.SetFloat(entry.Key, v);
-                entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
-                slider?.SetValueWithoutNotify(v);
-            });
+                field.RegisterCallback<FocusInEvent>(_ => isFieldFocused = true);
+                field.RegisterCallback<FocusOutEvent>(evt =>
+                {
+                    isFieldFocused = false;
+                    var text = field.text;
+                    if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+                    {
+                        var v = parsed;
+                        if (hasClamp)
+                            v = Mathf.Clamp(v, entry.FloatMin, entry.FloatMax);
+                        v = Snap(v);
+                        page.SetFloat(entry.Key, v);
+                        entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
+                        SetUI(v);
+                    }
+                    else
+                    {
+                        SetUI(page.GetFloat(entry.Key, entry.DefaultFloat));
+                    }
+                });
+
+                field.RegisterValueChangedCallback(evt =>
+                {
+                    if (!isFieldFocused)
+                        return;
+
+                    var v = evt.newValue;
+                    if (hasClamp)
+                        v = Mathf.Clamp(v, entry.FloatMin, entry.FloatMax);
+                    v = Snap(v);
+                    page.SetFloat(entry.Key, v);
+                    entry.Provider?.ApplyValue(SettingValue.FromFloat(v));
+                    slider?.SetValueWithoutNotify(v);
+                });
+            }
 
             _Bind(entry.Key, _ =>
             {

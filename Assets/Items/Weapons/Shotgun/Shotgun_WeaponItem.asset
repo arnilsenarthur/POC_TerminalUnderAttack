@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
   m_Name: Shotgun_WeaponItem
   m_EditorClassIdentifier: TUA.Items::TUA.Items.WeaponItem
-  _id: weapon.shotgun
+  id: weapon.shotgun
   sprite: {fileID: 21300000, guid: a679b0ac2e67bfb418e3a8bab79b68a7, type: 3}
   visualPrefab: {fileID: 3928626061727523611, guid: 4de2d0fd1bfa5cd4f862b1c15b61577f, type: 3}
   aimable: 1
@@ -21,11 +21,35 @@ MonoBehaviour:
   scopeFOV: 30
   spreadAngleWhenScoping: 0.5
   recoilMultiplierWhenScoping: 0.5
-  damage: 7
-  range: 12
+  damage: 25
+  range: 10
   fireRate: 0.9
   automatic: 0
-  headshotDamageMultiplier: 1.25
+  headshotDamageMultiplier: 2.2
+  distanceDamageFalloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: -1.2089324
+      outSlope: -1.2089324
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.056666676
+    - serializedVersion: 3
+      time: 1
+      value: 0.25
+      inSlope: -0.25
+      outSlope: -0.25
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   defaultAmmo: 6
   maxAmmo: 6
   magazineSize: 6
@@ -37,10 +61,10 @@ MonoBehaviour:
   firingErrorMultiplier: 0.45
   projectileCount: 8
   spreadAngle: 8.5
-  recoilVertical: 4
-  recoilHorizontal: 4
+  recoilVertical: 6
+  recoilHorizontal: 3
   recoilKickback: 0.1
   maxKickback: 0.15
   recoilRecoverySpeed: 5
-  maxRecoil: 10
-  recoilSpreadMultiplier: 1.5
+  maxRecoil: 25
+  recoilSpreadMultiplier: 2

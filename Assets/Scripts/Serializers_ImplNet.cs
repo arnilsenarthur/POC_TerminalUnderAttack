@@ -37,6 +37,8 @@ namespace TUA
             GenericReader<WeaponItemStack>.SetRead(ReadWeaponItemStack);
             GenericWriter<DataDriveItemStack>.SetWrite(WriteDataDriveItemStack);
             GenericReader<DataDriveItemStack>.SetRead(ReadDataDriveItemStack);
+            GenericWriter<GadgetItemStack>.SetWrite(WriteGadgetItemStack);
+            GenericReader<GadgetItemStack>.SetRead(ReadGadgetItemStack);
 
             // Register derived ItemStack types for polymorphic serialization (via ItemStack serializer)
             RegisterWriteHandler("itemstack", (writer, stack) =>
@@ -64,6 +66,15 @@ namespace TUA
             RegisterReadHandler("datadrive", (reader) =>
             {
                 return ReadDataDriveItemStack(reader);
+            });
+
+            RegisterWriteHandler("gadget", (writer, stack) =>
+            {
+                WriteGadgetItemStack(writer, (GadgetItemStack)stack);
+            });
+            RegisterReadHandler("gadget", (reader) =>
+            {
+                return ReadGadgetItemStack(reader);
             });
         }
 
@@ -266,7 +277,22 @@ namespace TUA
                 color32.a / 255f
             );
             return dataDriveStack;
-            }
+        }
+
+        private static void WriteGadgetItemStack(Writer writer, GadgetItemStack value)
+        {
+            writer.WriteString(value.item ?? string.Empty);
+            writer.WriteInt32(value.count);
+        }
+
+        private static GadgetItemStack ReadGadgetItemStack(Reader reader)
+        {
+            return new GadgetItemStack
+            {
+                item = reader.ReadStringAllocated() ?? string.Empty,
+                count = reader.ReadInt32()
+            };
+        }
         #endregion
 
         #region PlayerState

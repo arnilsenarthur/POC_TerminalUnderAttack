@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
   m_Name: Pistol_WeaponItem
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Data.WeaponItem
-  _id: weapon.pistol
+  id: weapon.pistol
   sprite: {fileID: 21300000, guid: af902a81ac60c8e418c157bf0f4b33b9, type: 3}
   visualPrefab: {fileID: 8128493027235850600, guid: 28db0764ed6056e45aa6ea92122b6657, type: 3}
   aimable: 1
@@ -21,11 +21,35 @@ MonoBehaviour:
   scopeFOV: 30
   spreadAngleWhenScoping: 0.5
   recoilMultiplierWhenScoping: 0.5
-  damage: 22
+  damage: 25
   range: 35
   fireRate: 0.28
   automatic: 0
-  headshotDamageMultiplier: 1.6
+  headshotDamageMultiplier: 2
+  distanceDamageFalloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -0.25
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0.75
+      inSlope: -0.25
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   defaultAmmo: 15
   maxAmmo: 15
   magazineSize: 15
@@ -42,5 +66,5 @@ MonoBehaviour:
   recoilKickback: 0.02
   maxKickback: 0.15
   recoilRecoverySpeed: 5
-  maxRecoil: 10
-  recoilSpreadMultiplier: 1.5
+  maxRecoil: 25
+  recoilSpreadMultiplier: 2

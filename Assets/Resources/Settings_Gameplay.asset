@@ -38,7 +38,7 @@ MonoBehaviour:
     type: 2
     key: camera.sensitivity_x
     defaultInt: 0
-    defaultFloat: 1
+    defaultFloat: 0.5
     defaultBool: 0
     defaultString: 
     intClamp: 0
@@ -47,7 +47,7 @@ MonoBehaviour:
     intStep: 1
     floatClamp: 1
     floatMin: 0.001
-    floatMax: 5
+    floatMax: 2
     floatStep: 0
     staticStringOptions: []
     provider: {fileID: 0}
@@ -72,7 +72,7 @@ MonoBehaviour:
     type: 2
     key: camera.sensitivity_y
     defaultInt: 0
-    defaultFloat: 1
+    defaultFloat: 0.5
     defaultBool: 0
     defaultString: 
     intClamp: 0
@@ -81,7 +81,7 @@ MonoBehaviour:
     intStep: 1
     floatClamp: 1
     floatMin: 0.001
-    floatMax: 5
+    floatMax: 2
     floatStep: 0
     staticStringOptions: []
     provider: {fileID: 0}

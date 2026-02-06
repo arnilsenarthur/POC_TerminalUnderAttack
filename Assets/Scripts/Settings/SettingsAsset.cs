@@ -9,10 +9,10 @@ namespace TUA.Settings
     [CreateAssetMenu(menuName = "TUA/Settings/Settings Asset", fileName = "NewSettings")]
     public sealed class SettingsAsset : ScriptableObject
     {
-         [FormerlySerializedAs("_unlocalizedName")]
-         [Header("Display")]
-         [Tooltip("Shown in the settings UI tab header. If empty, falls back to the asset name.")]
-         [SerializeField] private string unlocalizedName = "";
+        [FormerlySerializedAs("_unlocalizedName")]
+        [Header("Display")]
+        [Tooltip("Shown in the settings UI tab header. If empty, falls back to the asset name.")]
+        [SerializeField] private string unlocalizedName = "";
 
         [FormerlySerializedAs("_fileName")]
         [Tooltip("File name (relative to Application.persistentDataPath). Leave empty to use asset name + .json")]

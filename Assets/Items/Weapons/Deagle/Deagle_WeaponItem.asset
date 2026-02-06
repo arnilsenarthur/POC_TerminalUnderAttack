@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
   m_Name: Deagle_WeaponItem
   m_EditorClassIdentifier: TUA.Items::TUA.Items.WeaponItem
-  _id: weapon.deagle
+  id: weapon.deagle
   sprite: {fileID: 21300000, guid: 97dc24360d4314d448873d0ccfd9193a, type: 3}
   visualPrefab: {fileID: 5563669767145436420, guid: 8de56bc8379a2ba40951c0b91288ead9, type: 3}
   aimable: 1
@@ -21,11 +21,35 @@ MonoBehaviour:
   scopeFOV: 30
   spreadAngleWhenScoping: 0.5
   recoilMultiplierWhenScoping: 0.5
-  damage: 40
+  damage: 50
   range: 45
   fireRate: 0.45
   automatic: 0
   headshotDamageMultiplier: 2
+  distanceDamageFalloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.028877258
+      value: 1.0023537
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0.4
+      inSlope: -0.25
+      outSlope: -0.25
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   defaultAmmo: 7
   maxAmmo: 7
   magazineSize: 7
@@ -42,5 +66,5 @@ MonoBehaviour:
   recoilKickback: 0.05
   maxKickback: 0.1
   recoilRecoverySpeed: 5
-  maxRecoil: 10
-  recoilSpreadMultiplier: 1.5
+  maxRecoil: 25
+  recoilSpreadMultiplier: 2

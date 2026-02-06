@@ -23,7 +23,7 @@ namespace TUA.Entities
         public bool IsHacked { get; private set; }
         public bool IsBeingHacked { get; private set; }
         #endregion
-        
+
         #region Events
         public event System.Action<float> OnHackingProgressChangeEvent;
         public event System.Action<bool> OnIsHackedChangeEvent;
@@ -53,12 +53,12 @@ namespace TUA.Entities
         }
         #endregion
 
-        #region Methods
+        #region Public Methods
         public void Server_SetHackingProgress(float progress)
         {
             if (!IsServerSide)
                 throw new System.InvalidOperationException("Server_SetHackingProgress can only be called on server side");
-            
+
             _Server_SetHackingProgressInternal(progress);
         }
 
@@ -66,7 +66,7 @@ namespace TUA.Entities
         {
             if (!IsServerSide)
                 throw new System.InvalidOperationException("Server_SetIsHacked can only be called on server side");
-            
+
             _Server_SetIsHackedInternal(isHacked);
         }
 
@@ -74,18 +74,20 @@ namespace TUA.Entities
         {
             if (!IsServerSide)
                 throw new System.InvalidOperationException("Server_SetIsBeingHacked can only be called on server side");
-            
+
             _Server_SetIsBeingHackedInternal(isBeingHacked);
         }
+        #endregion
 
+        #region Private Methods
         private void _OnIsHackedChanged(bool isHacked)
         {
             if (isHacked)
             {
                 hackingBackground.color = new Color(0, 0, 0, 1);
                 hackingInformation.SetActive(false);
-                
-                if(hackFinishedEffect)
+
+                if (hackFinishedEffect)
                     hackFinishedEffect.SetActive(true);
             }
             else

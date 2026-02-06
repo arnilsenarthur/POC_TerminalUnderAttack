@@ -5,9 +5,10 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
+        #region Public Methods
         public List<Team> GetTeams()
         {
-            return !_gameMode ? null : _gameMode.GetTeams(this);
+            return !_gameMode ? null : _gameMode.InternalGetTeams(this);
         }
         
         public List<GamePlayer> GetPlayersInTeam(string teamName)
@@ -42,5 +43,6 @@ namespace TUA.Core
             var teamName = GetPlayerTeam(player);
             return string.IsNullOrEmpty(teamName) ? new List<GamePlayer>() : GetPlayersInTeam(teamName).Where(p => p != null && p.Uuid != player.Uuid).ToList();
         }
+        #endregion
     }
 }

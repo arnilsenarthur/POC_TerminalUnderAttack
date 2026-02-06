@@ -35,6 +35,7 @@ namespace TUA.Windowing
         private VisualElement _fixedViewRoot;
         private Stack<Window> _windowStack = new();
         private readonly Dictionary<Window, Coroutine> _closeCoroutines = new();
+        private Coroutine _pendingStateUpdate;
         #endregion
         
         #region Unity Callbacks
@@ -103,6 +104,7 @@ namespace TUA.Windowing
             _windowStack = new Stack<Window>(stackList);
             window.gameObject.SetActive(true);
             window.SetVisibleInstant(true);
+            // Update cursor state immediately when opening window to allow clicking
             _UpdateState();
             StartCoroutine(_ShowWindowAfterFrame(window));
         }
@@ -130,6 +132,13 @@ namespace TUA.Windowing
                     StopCoroutine(existingCoroutine);
             }
             
+            // Cancel any pending state update to prevent double updates
+            if (_pendingStateUpdate != null)
+            {
+                StopCoroutine(_pendingStateUpdate);
+                _pendingStateUpdate = null;
+            }
+            
             var coroutine = StartCoroutine(_CloseWindowDelayed(window, closeDelay));
             _closeCoroutines[window] = coroutine;
             if (stackList.Count > 0)
@@ -140,11 +149,14 @@ namespace TUA.Windowing
                 
                 previousWindow.gameObject.SetActive(true);
                 previousWindow.SetVisibleInstant(true);
-                _UpdateState();
-                StartCoroutine(_ShowWindowAfterFrame(previousWindow));
+                // Wait for window animation to complete before updating state
+                _pendingStateUpdate = StartCoroutine(_UpdateStateAfterWindowAnimation(previousWindow));
             }
             else
-                StartCoroutine(_UpdateStateAfterFrame());
+            {
+                // Wait for close animation to complete before updating cursor state
+                _pendingStateUpdate = StartCoroutine(_UpdateStateAfterCloseAnimation());
+            }
         }
         
         private IEnumerator _CloseWindowDelayed(Window window, float delay)
@@ -165,20 +177,51 @@ namespace TUA.Windowing
                 _UpdateState();
         }
         
+        private IEnumerator _UpdateStateAfterCloseAnimation()
+        {
+            // Wait for window close animation to complete
+            // Most window animations are 300ms, so wait slightly longer to be safe
+            yield return new WaitForSeconds(closeDelay + 0.05f);
+            // Wait one more frame to ensure window visibility is fully updated
+            yield return null;
+            _UpdateState();
+            _pendingStateUpdate = null;
+        }
+        
+        private IEnumerator _UpdateStateAfterWindowAnimation(Window window)
+        {
+            // Wait one frame for window to be set visible
+            yield return null;
+            if (window && window.gameObject.activeSelf)
+            {
+                _UpdateState();
+            }
+            _pendingStateUpdate = null;
+        }
+        
         private void _UpdateState()
         {
             var hasOpenWindow = _windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
             if (controlsMouse)
             {
-                if (hasOpenWindow)
+                // Only update cursor state if it needs to change to prevent flickering
+                var shouldLock = !hasOpenWindow;
+                var currentlyLocked = UnityEngine.Cursor.lockState == CursorLockMode.Locked;
+                
+                if (shouldLock != currentlyLocked)
                 {
-                    UnityEngine.Cursor.lockState = CursorLockMode.None;
-                    UnityEngine.Cursor.visible = true;
-                }
-                else
-                {
-                    UnityEngine.Cursor.lockState = CursorLockMode.Locked;
-                    UnityEngine.Cursor.visible = false;
+                    if (hasOpenWindow)
+                    {
+                        // Unlock cursor immediately when window opens to allow clicking
+                        UnityEngine.Cursor.lockState = CursorLockMode.None;
+                        UnityEngine.Cursor.visible = true;
+                    }
+                    else
+                    {
+                        // Lock cursor when no windows are open
+                        UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+                        UnityEngine.Cursor.visible = false;
+                    }
                 }
             }
 
@@ -201,7 +244,23 @@ namespace TUA.Windowing
         public static bool HasOpenWindow()
         {
             var manager = FindInScene();
-            return manager && manager._windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
+            if (!manager)
+                return false;
+            
+            // Check windows in stack
+            var hasOpenInStack = manager._windowStack.Any(window => window && window.gameObject.activeSelf && window.IsVisible);
+            if (hasOpenInStack)
+                return true;
+            
+            // Also check if any windows are in the process of closing but still visible (during animation)
+            // This prevents cursor from locking during window close animations
+            foreach (var window in manager._closeCoroutines.Keys)
+            {
+                if (window && window.gameObject.activeSelf && window.IsVisible)
+                    return true;
+            }
+            
+            return false;
         }
         #endregion
     }

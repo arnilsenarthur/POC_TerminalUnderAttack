@@ -117,10 +117,11 @@ namespace TUA.Entities
             get => _viewDirection;
             set
             {
-                if (_viewDirection == value)
-                    return;
-                    
-                Client_UpdateViewDirection(value.x, value.y);
+                if (IsLocalOwned)
+                {
+                    _viewDirection = value;
+                    OnViewDirectionChangeEvent?.Invoke(value);
+                }
             }
         }
 
@@ -198,6 +199,28 @@ namespace TUA.Entities
             CharacterController = GetComponent<CharacterController>();
         }
         
+        protected virtual void OnDestroy()
+        {
+            // Clean up visual item when player is destroyed
+            // This is important because the gun can be unparented (e.g., when scoped in first person)
+            // and would otherwise remain in the scene as an orphaned object
+            if (CurrentVisualItem != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(CurrentVisualItem);
+                }
+                else
+                {
+                    DestroyImmediate(CurrentVisualItem);
+                }
+                CurrentVisualItem = null;
+            }
+            
+            // Cancel any active reload sounds
+            _CancelReloadSound();
+        }
+        
         public void Update()
         {
             var deltaTime = Time.deltaTime;
@@ -208,6 +231,7 @@ namespace TUA.Entities
                 HandleAimingInput();
                 HandleSneakInput();
                 HandleFiringStateInput();
+                HandleGadgetInput();
                 HandleMovement(deltaTime);
                 HandleLook(deltaTime);
             }
@@ -313,16 +337,16 @@ namespace TUA.Entities
             if (!IsLocalOwned || !CharacterController)
                 return;
             
-            if (IsWindowOpen())
-                return;
-
             var grounded = CharacterController.isGrounded;
             var vel = Velocity;
             if (grounded && vel.y <= 0f)
                 vel.y = -Mathf.Abs(groundStickVelocity);
             
-            if (grounded && Input.GetButtonDown("Jump"))
-                vel.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
+            if (!IsWindowOpen())
+            {
+                if (grounded && Input.GetButtonDown("Jump"))
+                    vel.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
+            }
             
             if (!grounded || vel.y > 0f)
                 vel.y -= gravity * deltaTime;
@@ -330,6 +354,11 @@ namespace TUA.Entities
             Velocity = vel;
         }
 
+        /// <summary>
+        /// Checks if any window (pause menu, settings, etc.) is currently open.
+        /// When windows are open, only player input is disabled - the game world continues running normally.
+        /// This is important for multiplayer where the world must continue even when a player has their menu open.
+        /// </summary>
         protected bool IsWindowOpen()
         {
             return WindowManager.HasOpenWindow();
@@ -367,43 +396,33 @@ namespace TUA.Entities
         {
             if (!IsLocalOwned)
                 return;
-            
-            if (IsWindowOpen())
-                return;
-            
-            if (Cursor.lockState != CursorLockMode.Locked)
+
+            if (IsWindowOpen() || Cursor.lockState != CursorLockMode.Locked || Cursor.visible)
                 return;
 
-            var mouseX = Input.GetAxis("Mouse X");
-            var mouseY = Input.GetAxis("Mouse Y");
+            var mouseX = Input.GetAxisRaw("Mouse X");
+            var mouseY = Input.GetAxisRaw("Mouse Y");
 
-            if (!(Mathf.Abs(mouseX) > 0.01f) && !(Mathf.Abs(mouseY) > 0.01f)) 
+            if (Mathf.Abs(mouseX) < 0.0001f && Mathf.Abs(mouseY) < 0.0001f)
                 return;
-            
-            var sensX = 1f;
-            var sensY = 1f;
-            var invX = false;
-            var invY = false;
 
-            if (settings)
-            {
-                sensX = settings.GetFloat(cameraSensitivityXKey, 1f);
-                sensY = settings.GetFloat(cameraSensitivityYKey, 1f);
-                invX = settings.GetBool(cameraInvertedXKey);
-                invY = settings.GetBool(cameraInvertedYKey);
-            }
-            
-            var speedX = rotationSpeed * Mathf.Max(0f, sensX);
-            var speedY = rotationSpeed * Mathf.Max(0f, sensY);
-            var deltaYaw = mouseX * speedX * deltaTime;
-            var deltaPitch = -mouseY * speedY * deltaTime;
-            if (invX) deltaYaw *= -1f;
-            if (invY) deltaPitch *= -1f;
+            var sensX = settings?.GetFloat(cameraSensitivityXKey, 1f) ?? 1f;
+            var sensY = settings?.GetFloat(cameraSensitivityYKey, 1f) ?? 1f;
+            var invX = settings?.GetBool(cameraInvertedXKey) ?? false;
+            var invY = settings?.GetBool(cameraInvertedYKey) ?? false;
 
-            ViewDirection = new Vector2(
-                ViewDirection.x + deltaYaw,
-                Mathf.Clamp(ViewDirection.y + deltaPitch, -89, 89)
-            );
+            var baseSpeed = rotationSpeed * 10f;
+            var speedX = baseSpeed * sensX;
+            var speedY = baseSpeed * sensY;
+
+            var deltaYaw = mouseX * speedX * deltaTime * (invX ? -1f : 1f);
+            var deltaPitch = -mouseY * speedY * deltaTime * (invY ? -1f : 1f);
+
+            var newYaw = _viewDirection.x + deltaYaw;
+            var newPitch = Mathf.Clamp(_viewDirection.y + deltaPitch, -89f, 89f);
+
+            _viewDirection = new Vector2(newYaw, newPitch);
+            OnViewDirectionChangeEvent?.Invoke(_viewDirection);
         }
 
         private bool IsSelectedItemAimable()
@@ -521,7 +540,7 @@ namespace TUA.Entities
             if (IsWindowOpen())
                 return;
 
-            var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftShift);
+var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftShift);
             
             var wantSneak = inputSneak || (IsSelectedItemAimable() && IsAiming);
 
@@ -529,6 +548,41 @@ namespace TUA.Entities
                 return;
 
             IsSneaking = wantSneak;
+        }
+
+        private void HandleGadgetInput()
+        {
+            if (!IsLocalOwned)
+                return;
+                
+            if (IsWindowOpen())
+                return;
+
+            var selectedItem = Inventory?.GetSelectedItem();
+            if (selectedItem is not GadgetItemStack gadgetStack)
+                return;
+
+            if (gadgetStack.count <= 0)
+                return;
+
+            var isDrop = false;
+            if (Input.GetMouseButtonDown(1))
+                isDrop = true;
+            else if (!Input.GetMouseButtonDown(0))
+                return;
+
+            GetCameraView(out var cameraPosition, out var cameraRotation, out _);
+            var cameraForward = cameraRotation * Vector3.forward;
+            var throwOrigin = cameraPosition;
+            if (IsServerSide)
+            {
+                OnRequestToThrowGadgetEvent?.Invoke(this, throwOrigin, cameraForward, isDrop);
+            }
+            else
+            {
+                Client_ThrowGadget(throwOrigin, cameraForward, isDrop);
+                OnRequestToThrowGadgetEvent?.Invoke(this, throwOrigin, cameraForward, isDrop);
+            }
         }
 
         private bool IsAimReadyInternal()
@@ -656,7 +710,7 @@ namespace TUA.Entities
             }
 
             var weaponTransform = CurrentVisualItem != null ? CurrentVisualItem.transform : transform;
-            _currentReloadSound = AudioSystem.Instance.PlayAudio(weaponItem.reloadSoundKey, 1f, AudioCategory.SFX);
+            _currentReloadSound = AudioSystem.Instance.PlayAudio(weaponItem.reloadSoundKey, 1f, AudioCategory.Gameplay);
             _currentReloadSound.Follow(weaponTransform);
             
             const float crossFadeTime = 0.25f;
@@ -793,6 +847,7 @@ namespace TUA.Entities
         public event Action<IWeaponUser, Vector3, Vector3> OnClientSpawnShotEffects;
         public event Action<IWeaponUser, Vector3, Vector3> OnRequestToShootEvent;
         public event Action<IWeaponUser> OnRequestToReloadEvent;
+        public event Action<IWeaponUser, Vector3, Vector3, bool> OnRequestToThrowGadgetEvent;
         
         public WeaponState WeaponState => _weaponState;
         bool IWeaponUser.IsLocalOwned => IsLocalOwned;
@@ -973,6 +1028,15 @@ namespace TUA.Entities
                 throw new InvalidOperationException("Client_Reload can only be called for locally owned player");
             RpcClient_Reload();
         }
+
+        public void Client_ThrowGadget(Vector3 origin, Vector3 direction, bool isDrop)
+        {
+            if (!IsClientSide)
+                throw new InvalidOperationException("Client_ThrowGadget can only be called on client side");
+            if (!IsLocalOwned)
+                throw new InvalidOperationException("Client_ThrowGadget can only be called for locally owned player");
+            RpcClient_ThrowGadget(origin, direction, isDrop);
+        }
         
         // Private implementations to update state from client and call RPC
         // Client_Update methods now only update local state
@@ -1145,14 +1209,24 @@ namespace TUA.Entities
                 return;
 
             var item = itemRegistry.GetEntry<Item>(selectedItemStack.item);
-            if (item == null || item.visualPrefab == null)
+            if (item == null)
+                return;
+
+            GameObject prefabToUse = null;
+
+            if (item.visualPrefab != null)
+            {
+                prefabToUse = item.visualPrefab;
+            }
+
+            if (prefabToUse == null)
                 return;
 
             
             if (heldItemParent == null)
                 heldItemParent = transform;
 
-            CurrentVisualItem = Instantiate(item.visualPrefab, heldItemParent);
+            CurrentVisualItem = Instantiate(prefabToUse, heldItemParent);
             CurrentVisualItem.transform.localPosition = Vector3.zero;
             CurrentVisualItem.transform.localRotation = Quaternion.identity;
         }

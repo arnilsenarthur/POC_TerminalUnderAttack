@@ -7,9 +7,12 @@ namespace TUA.Core
     [Serializable]
     public class Inventory : IEnumerable<ItemStack>
     {
+        #region Fields
         public ItemStack[] slots;
         public int selectedSlot;
+        #endregion
 
+        #region Constructors
         public Inventory()
         {
             slots = Array.Empty<ItemStack>();
@@ -21,19 +24,21 @@ namespace TUA.Core
             slots = new ItemStack[slotCount];
             selectedSlot = -1;
         }
+        #endregion
 
+        #region Public Methods
         public bool CanSelectSlot(int slot)
         {
-            return slot >= 0 && slot < slots.Length && slots[slot] != null && !IsSlotEmpty(slot);
+            return slot >= 0 && slot < slots.Length && !IsSlotEmpty(slot);
         }
 
         public bool IsSlotEmpty(int slot)
         {
             if (slot < 0 || slot >= slots.Length)
                 return true;
-            
+
             var stack = slots[slot];
-            return stack == null || string.IsNullOrEmpty(stack.item);
+            return string.IsNullOrEmpty(stack?.item);
         }
 
         public Inventory Copy()
@@ -46,10 +51,7 @@ namespace TUA.Core
 
             for (var i = 0; i < slots.Length; i++)
             {
-                if (slots[i] == null)
-                    continue;
-
-                copy.slots[i] = slots[i].Copy();
+                copy.slots[i] = slots[i]?.Copy();
             }
 
             return copy;
@@ -59,14 +61,24 @@ namespace TUA.Core
         {
             if (selectedSlot < 0 || selectedSlot >= slots.Length)
                 return null;
-            
+
             return slots[selectedSlot];
         }
 
         public bool AddItemAtSlot(int slot, ItemStack itemStack)
         {
-            if (slot < 0 || slot >= slots.Length)
+            if (slot < 0)
                 return false;
+
+            if (slot >= slots.Length)
+            {
+                var newSlots = new ItemStack[slot + 1];
+                for (var i = 0; i < slots.Length; i++)
+                {
+                    newSlots[i] = slots[i];
+                }
+                slots = newSlots;
+            }
 
             slots[slot] = itemStack;
             return true;
@@ -74,16 +86,14 @@ namespace TUA.Core
 
         public int AddItem(ItemStack itemStack)
         {
-            for (int i = 0; i < slots.Length; i++)
+            var newSlots = new ItemStack[slots.Length + 1];
+            for (var i = 0; i < slots.Length; i++)
             {
-                if (IsSlotEmpty(i))
-                {
-                    slots[i] = itemStack;
-                    return i;
-                }
+                newSlots[i] = slots[i];
             }
-
-            return -1;
+            newSlots[slots.Length] = itemStack;
+            slots = newSlots;
+            return slots.Length - 1;
         }
 
         public bool RemoveItemAtSlot(int slot)
@@ -91,11 +101,24 @@ namespace TUA.Core
             if (slot < 0 || slot >= slots.Length)
                 return false;
 
-            slots[slot] = null;
+            var newSlots = new ItemStack[slots.Length - 1];
+            for (var i = 0; i < slot; i++)
+            {
+                newSlots[i] = slots[i];
+            }
+            for (var i = slot + 1; i < slots.Length; i++)
+            {
+                newSlots[i - 1] = slots[i];
+            }
+            slots = newSlots;
 
             if (selectedSlot == slot)
             {
                 selectedSlot = -1;
+            }
+            else if (selectedSlot > slot)
+            {
+                selectedSlot--;
             }
 
             return true;
@@ -105,7 +128,7 @@ namespace TUA.Core
         {
             for (int i = 0; i < slots.Length; i++)
             {
-                if (slots[i] != null && slots[i].item == itemId)
+                if (slots[i]?.item == itemId)
                 {
                     return RemoveItemAtSlot(i);
                 }
@@ -135,7 +158,9 @@ namespace TUA.Core
         {
             return slots?.Length ?? 0;
         }
+        #endregion
 
+        #region Interface Implementation
         public IEnumerator<ItemStack> GetEnumerator()
         {
             return ((IEnumerable<ItemStack>)slots).GetEnumerator();
@@ -145,5 +170,6 @@ namespace TUA.Core
         {
             return GetEnumerator();
         }
+        #endregion
     }
 }

@@ -231,6 +231,113 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -452.426, z: 0}
+--- !u!1 &14596824
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 14596827}
+  - component: {fileID: 14596826}
+  - component: {fileID: 14596825}
+  m_Layer: 0
+  m_Name: Gadget System
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &14596825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14596824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Object.NetworkObject
+  <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 1
+  WasActiveDuringEdit_Set1: 1
+  <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
+  _isNetworked: 1
+  _isSpawnable: 1
+  _isGlobal: 0
+  _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
+  _defaultDespawnType: 0
+  _initializedTimestamp: 0
+  NetworkObserver: {fileID: 0}
+  _enablePrediction: 0
+  _predictionType: 0
+  _localReconcileCorrectionType: 2
+  _graphicalObject: {fileID: 0}
+  _detachGraphicalObject: 0
+  _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
+  _ownerInterpolation: 1
+  _ownerSmoothedProperties: 255
+  _adaptiveInterpolation: 3
+  _spectatorSmoothedProperties: 255
+  _spectatorInterpolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  <PrefabId>k__BackingField: 65535
+  <SpawnableCollectionId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 0
+  SceneId: 4227332928
+  SerializedTransformProperties:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
+--- !u!114 &14596826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14596824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5626ad2783741c648a263940bee89aa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TUA.Systems::TUA.Systems.GadgetSystem
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 14596825}
+  _networkObjectCache: {fileID: 0}
+  grenadePrefab: {fileID: 4402129973326899883, guid: f182af6fef5ddfe4bba7af17c303078a, type: 3}
+  flashPrefab: {fileID: 3889765227975307886, guid: 9bd3a6265ad7c7d45bccfc90313f6272, type: 3}
+  smokePrefab: {fileID: 2594975482686410121, guid: 955dd1fe7635f874f8862cace71fdb8f, type: 3}
+  smokeAreaEntityPrefab: {fileID: 8656522925564163052, guid: e4268917e9f110344b82f2ec400f189c, type: 3}
+  itemRegistry: {fileID: 11400000, guid: e0ca79b95ad8193469a33b3bb49a3bff, type: 2}
+--- !u!4 &14596827
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 14596824}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.06993, y: 0.39550003, z: -4.50043}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &106951035
 GameObject:
   m_ObjectHideFlags: 0
@@ -360,6 +467,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d84d68386c7b0c74bb7f88e7616234c7, type: 2}
   - {fileID: 11400000, guid: 6817acfdc90e8604f8af7fde5cd3d239, type: 2}
   - {fileID: 11400000, guid: 98b8dfc36c53e9f47bf01f8f84c26970, type: 2}
+  - {fileID: 11400000, guid: 0b617efe542848f4bbbe8cd40b296a5a, type: 2}
+  - {fileID: 11400000, guid: 240260790c4186d40a9fb3e07999843b, type: 2}
+  - {fileID: 11400000, guid: 199afff2ea60fa448b798a77bcbbf507, type: 2}
 --- !u!1 &143789455
 GameObject:
   m_ObjectHideFlags: 0
@@ -501,10 +611,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe4858326bab6474484c662ea68da334, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Interface.WindowManager
-  _controlsMouse: 1
-  _windowToOpenOnEsc: {fileID: 1825972937}
-  _fixedView: {fileID: 354155036}
-  _closeDelay: 0.3
+  controlsMouse: 1
+  windowToOpenOnEsc: {fileID: 1825972937}
+  fixedView: {fileID: 354155036}
+  closeDelay: 0.3
 --- !u!4 &168204740
 Transform:
   m_ObjectHideFlags: 0
@@ -905,36 +1015,6 @@ MonoBehaviour:
   uiDocument: {fileID: 354155036}
   inventorySlotTemplate: {fileID: 9197481963319205126, guid: aea6167659e2baf41bc2980c74770e6b, type: 3}
   itemRegistry: {fileID: 11400000, guid: e0ca79b95ad8193469a33b3bb49a3bff, type: 2}
-  healthGradient:
-    serializedVersion: 2
-    key0: {r: 1, g: 0, b: 0, a: 1}
-    key1: {r: 1, g: 0.5, b: 0, a: 1}
-    key2: {r: 1, g: 0.92156863, b: 0.015686275, a: 0}
-    key3: {r: 0, g: 1, b: 0, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
-    key5: {r: 0, g: 0, b: 0, a: 0}
-    key6: {r: 0, g: 0, b: 0, a: 0}
-    key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 0
-    ctime1: 19661
-    ctime2: 39321
-    ctime3: 65535
-    ctime4: 0
-    ctime5: 0
-    ctime6: 0
-    ctime7: 0
-    atime0: 0
-    atime1: 65535
-    atime2: 0
-    atime3: 0
-    atime4: 0
-    atime5: 0
-    atime6: 0
-    atime7: 0
-    m_Mode: 0
-    m_ColorSpace: -1
-    m_NumColorKeys: 4
-    m_NumAlphaKeys: 2
 --- !u!114 &354155039
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -979,6 +1059,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Systems.CameraSystem
   mainCamera: {fileID: 1313859997}
+  settings: {fileID: 0}
+  cameraSensitivityXKey: cameraSensitivityX
+  cameraSensitivityYKey: cameraSensitivityY
+  cameraInvertedXKey: cameraInvertedX
+  cameraInvertedYKey: cameraInvertedY
+  rotationSpeed: 100
 --- !u!4 &439700038
 Transform:
   m_ObjectHideFlags: 0
@@ -1107,6 +1193,8 @@ MonoBehaviour:
   bulletTracePrefab: {fileID: 7879607365159992922, guid: 42bc74bbdf7a6a24d8f1f190a5fef652, type: 3}
   hitEffectPrefab: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
   muzzleFlashPrefab: {fileID: 2504214343621411470, guid: 3ed0d324122d7b24eaec75c55c74aafc, type: 3}
+  playerHitSoundKey: entity_hit
+  playerDeathVfxPrefab: {fileID: 5985634496115995773, guid: 463cf9f7af4680240898f6aeba3fe3e6, type: 3}
   itemRegistry: {fileID: 11400000, guid: e0ca79b95ad8193469a33b3bb49a3bff, type: 2}
 --- !u!1 &563628555
 GameObject:
@@ -1504,6 +1592,9 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 701797900}
   _networkObjectCache: {fileID: 0}
+  soundFeedKey: 
+  soundKillKey: feed_kill
+  soundObjectiveKey: 
 --- !u!1001 &742922329
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2801,9 +2892,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 069cf31d7f5e68749a90364c53951c34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Interface.PauseMenuController
-  _uiDocument: {fileID: 1825972938}
-  _canCloseWithEsc: 1
-  _settingsMenuController: {fileID: 2135458054}
+  uiDocument: {fileID: 1825972938}
+  canCloseWithEsc: 1
+  settingsMenuController: {fileID: 2135458054}
 --- !u!114 &1825972938
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3364,17 +3455,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d318cd8f1717b1e4aa9711f45522db25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TerminalUnderAttack.Interface.SettingsMenuController
-  _uiDocument: {fileID: 2135458052}
-  _canCloseWithEsc: 1
-  _pages:
+  uiDocument: {fileID: 2135458052}
+  canCloseWithEsc: 1
+  pages:
   - {fileID: 11400000, guid: 71935f95f6d0eb24b881bbe84825d0ff, type: 2}
   - {fileID: 11400000, guid: d55245e269c578444b25e33ded9acc6f, type: 2}
-  _startPageIndex: 0
-  _labelWidget: {fileID: 9197481963319205126, guid: 2f6612a0198a3e24cb0ed12b2a4519ec, type: 3}
-  _boolWidget: {fileID: 9197481963319205126, guid: 83bb0afd66279034aa1377cb10c4a485, type: 3}
-  _intWidget: {fileID: 9197481963319205126, guid: 429bd4acdb2be7648ab6173d396a7a9c, type: 3}
-  _floatWidget: {fileID: 9197481963319205126, guid: c47d7626380165d4b9b9b82e5d889cb3, type: 3}
-  _stringWidget: {fileID: 9197481963319205126, guid: a9a765eaef0acce48818a353af2922b4, type: 3}
+  startPageIndex: 0
+  labelWidget: {fileID: 9197481963319205126, guid: 2f6612a0198a3e24cb0ed12b2a4519ec, type: 3}
+  boolWidget: {fileID: 9197481963319205126, guid: 83bb0afd66279034aa1377cb10c4a485, type: 3}
+  intWidget: {fileID: 9197481963319205126, guid: 429bd4acdb2be7648ab6173d396a7a9c, type: 3}
+  floatWidget: {fileID: 9197481963319205126, guid: c47d7626380165d4b9b9b82e5d889cb3, type: 3}
+  stringWidget: {fileID: 9197481963319205126, guid: a9a765eaef0acce48818a353af2922b4, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -3392,6 +3483,7 @@ SceneRoots:
   - {fileID: 1889372346}
   - {fileID: 544430136}
   - {fileID: 999571206}
+  - {fileID: 14596827}
   - {fileID: 221046532}
   - {fileID: 563628559}
   - {fileID: 354155037}

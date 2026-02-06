@@ -8,10 +8,12 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
-        #region Fields & Properties
+        #region Private Fields
         private readonly Dictionary<Uuid, Entity> _allEntities = new();
         private readonly Dictionary<Uuid, List<Entity>> _playerEntities = new();
+        #endregion
 
+        #region Properties
         public IReadOnlyDictionary<Uuid, Entity> AllEntities => _allEntities;
         #endregion
         
@@ -20,8 +22,7 @@ namespace TUA.Core
         public static event Action<Entity> OnEntityDespawnEvent;
         #endregion
 
-        #region Entity Registration & Management
-
+        #region Public Methods
         public void RegisterEntity(Entity entity)
         {
             if (!entity)
@@ -61,13 +62,10 @@ namespace TUA.Core
                 return;
             
             if (!_playerEntities.ContainsKey(ownerUuid))
-            {
                 _playerEntities[ownerUuid] = new List<Entity>();
-            }
+
             if (!_playerEntities[ownerUuid].Contains(entity))
-            {
                 _playerEntities[ownerUuid].Add(entity);
-            }
         }
 
         public void UnregisterEntity(Entity entity)
@@ -93,9 +91,7 @@ namespace TUA.Core
                 OnEntityDespawnEvent?.Invoke(entity);
             }
             else
-            {
                 Debug.LogWarning($"[GameWorld] Attempted to unregister entity {entityType} '{entityName}' (UUID: {entity.EntityUuid}) but it was not found in registry");
-            }
 
             var ownerUuid = entity.OwnerPlayerUuid;
             if (!ownerUuid.IsValid || !_playerEntities.TryGetValue(ownerUuid, out var playerEntityList)) 
@@ -103,9 +99,7 @@ namespace TUA.Core
             
             playerEntityList.Remove(entity);
             if (playerEntityList.Count == 0)
-            {
                 _playerEntities.Remove(ownerUuid);
-            }
         }
 
         public void UpdateEntityOwner(Entity entity, Uuid oldOwnerUuid, Uuid newOwnerUuid)
@@ -120,9 +114,7 @@ namespace TUA.Core
             {
                 oldList.Remove(entity);
                 if (oldList.Count == 0)
-                {
                     _playerEntities.Remove(oldOwnerUuid);
-                }
             }
 
             if (!newOwnerUuid.IsValid) 
@@ -135,19 +127,13 @@ namespace TUA.Core
                 _playerEntities[newOwnerUuid].Add(entity);
         }
 
-        #endregion
-
-        #region Entity Queries by UUID
-
         public Entity GetEntityByUuid(Uuid uuid)
         {
             if (!uuid.IsValid)
                 return null;
 
             if (_allEntities.TryGetValue(uuid, out var entity) && entity && entity.IsSpawned)
-            {
                 return entity;
-            }
 
             return null;
         }
@@ -158,19 +144,13 @@ namespace TUA.Core
             return entity as T;
         }
 
-        #endregion
-
-        #region Entity Queries by Player
-
         public IReadOnlyList<Entity> GetEntitiesOwnedByPlayer(GamePlayer gamePlayer)
         {
             if (gamePlayer == null || !gamePlayer.Uuid.IsValid)
                 return new List<Entity>();
 
             if (_playerEntities.TryGetValue(gamePlayer.Uuid, out var entities))
-            {
                 return entities.Where(e => e && e.IsSpawned).ToList();
-            }
 
             return new List<Entity>();
         }
@@ -181,9 +161,7 @@ namespace TUA.Core
                 return new List<T>();
 
             if (_playerEntities.TryGetValue(gamePlayer.Uuid, out var entities))
-            {
                 return entities.Where(e => e && e.IsSpawned && e is T).Cast<T>().ToList();
-            }
 
             return new List<T>();
         }
@@ -202,16 +180,10 @@ namespace TUA.Core
                 return null;
 
             if (_playerEntities.TryGetValue(gamePlayer.Uuid, out var entities))
-            {
                 return entities.FirstOrDefault(e => e && e.IsSpawned && e is T) as T;
-            }
 
             return null;
         }
-
-        #endregion
-
-        #region Entity Queries by Type
 
         public IReadOnlyList<T> GetEntities<T>() where T : Entity
         {
@@ -230,7 +202,6 @@ namespace TUA.Core
             
             return filtered;
         }
-
         #endregion
     }
 }

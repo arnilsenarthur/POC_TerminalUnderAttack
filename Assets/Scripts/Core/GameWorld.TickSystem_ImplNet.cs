@@ -8,10 +8,13 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
+        #region Private Fields
         private TimeManager _timeManager;
         private readonly SyncVar<int> _tickRate = new(64);
         private readonly SyncVar<bool> _gameModeRunning = new();
+        #endregion
         
+        #region Unity Callbacks
         private void Start()
         {
             TickRate = _tickRate.Value;
@@ -20,15 +23,14 @@ namespace TUA.Core
             {
                 TickRate = next;
                 if (_timeManager && next > 0 && asServer)
-                {
                     _timeManager.SetTickRate((ushort)next);
-                }
             };
             _gameModeRunning.OnChange += (_, next, _) =>
             {
                 IsGameModeRunning = next;
             };
         }
+
         private void Update()
         {
             if (_timeManager)
@@ -37,6 +39,9 @@ namespace TUA.Core
                 LocalTick = _timeManager.LocalTick;
             }
         }
+        #endregion
+
+        #region Private Methods
         private void InitializeTickSystem()
         {
             if (_timeManager)
@@ -73,6 +78,7 @@ namespace TUA.Core
             }
             _timeManager.OnTick += TimeManager_OnTick;
         }
+
         private void CleanupTickSystem()
         {
             if (_timeManager)
@@ -81,6 +87,7 @@ namespace TUA.Core
                 _timeManager = null;
             }
         }
+
         private void Server_SetTickRateInternal(int rate)
         {
             if (!IsServerSide)
@@ -99,6 +106,7 @@ namespace TUA.Core
             if (_timeManager)
                 _timeManager.SetTickRate((ushort)rate);
         }
+
         private void Server_SetGameModeRunningInternal(bool running)
         {
             if (!IsServerSide)
@@ -107,6 +115,7 @@ namespace TUA.Core
             _gameModeRunning.Value = running;
             _gameModeRunning.UpdateSendRate(0f);
         }
+
         private void TimeManager_OnTick()
         {
             var dt = _timeManager ? _timeManager.TickDelta : 0d;
@@ -119,9 +128,10 @@ namespace TUA.Core
             
             var tickDelta = (float)dt;
             if (IsServerSide)
-                _gameMode?.OnTick(tickDelta, this);
+                _gameMode?.InternalOnTick(tickDelta, this);
             
             OnTickEvent?.Invoke(tickDelta);
         }
+        #endregion
     }
 }

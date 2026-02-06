@@ -28,6 +28,7 @@ namespace TUA.Core
                 return null;
             }
         }
+
         public bool IsLocalOwned
         {
             get
@@ -43,11 +44,12 @@ namespace TUA.Core
                 return ownerUuid.IsValid && ownerUuid == localPlayer.Uuid;
             }
         }
+
         public bool IsOwned => OwnerPlayerUuid.IsValid;
         public new bool IsSpawned { get; private set; }
         #endregion
 
-        #region Methods
+        #region Public Methods
         public void Server_SetOwnerPlayerUuid(Uuid playerUuid)
         {
             if (!IsServerSide)

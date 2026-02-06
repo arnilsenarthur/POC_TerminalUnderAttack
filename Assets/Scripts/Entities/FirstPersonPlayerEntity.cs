@@ -27,24 +27,33 @@ namespace TUA.Entities
             if (!IsLocalOwned || !CharacterController)
                 return;
 
-            var moveX = Input.GetAxis("Horizontal");
-            var moveZ = Input.GetAxis("Vertical");
-
-            var input = new Vector3(moveX, 0f, moveZ);
-            if (input.sqrMagnitude > 1f)
-                input.Normalize();
-
-            var speed = GetCurrentMoveSpeed();
-            var desiredHorizontal = (transform.right * input.x + transform.forward * input.z) * speed;
+            // When window is open, ignore input but continue applying movement (player keeps falling/moving)
+            Vector3 input;
+            if (IsWindowOpen())
+            {
+                // No input when paused - player continues with current velocity
+                input = Vector3.zero;
+            }
+            else
+            {
+                // Read input normally when not paused
+                var moveX = Input.GetAxis("Horizontal");
+                var moveZ = Input.GetAxis("Vertical");
+                input = new Vector3(moveX, 0f, moveZ);
+                if (input.sqrMagnitude > 1f)
+                    input.Normalize();
+            }
 
             var currentHorizontal = new Vector3(Velocity.x, 0f, Velocity.z);
             Vector3 horizontal;
+
+            var speed = GetCurrentMoveSpeed();
+            var desiredHorizontal = (transform.right * input.x + transform.forward * input.z) * speed;
 
             if (CharacterController.isGrounded)
                 horizontal = desiredHorizontal;
             else
             {
-                
                 if (input.sqrMagnitude < 0.0001f)
                     horizontal = currentHorizontal;
                 else
@@ -57,6 +66,7 @@ namespace TUA.Entities
             var move = horizontal;
             move.y = Velocity.y;
 
+            // Always apply movement - player continues falling/moving even when paused
             CharacterController.Move(move * deltaTime);
             Velocity = move;
         }

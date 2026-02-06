@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35ac00f241a40b646b08be25e3f57bae, type: 3}
   m_Name: SniperRifle_WeaponItem
   m_EditorClassIdentifier: TUA.Items::TUA.Items.WeaponItem
-  _id: weapon.sniper_rifle
+  id: weapon.sniper_rifle
   sprite: {fileID: 21300000, guid: 8700980f54914594e9b9f8b48a067d0c, type: 3}
   visualPrefab: {fileID: 7321597247831678145, guid: bd3421f89d4e3e948a10082f76fb90ff, type: 3}
   aimable: 1
@@ -21,11 +21,35 @@ MonoBehaviour:
   scopeFOV: 25
   spreadAngleWhenScoping: 0.1
   recoilMultiplierWhenScoping: 0.5
-  damage: 70
+  damage: 80
   range: 120
   fireRate: 1.4
   automatic: 0
-  headshotDamageMultiplier: 2
+  headshotDamageMultiplier: 1.5
+  distanceDamageFalloffCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   defaultAmmo: 5
   maxAmmo: 5
   magazineSize: 5
@@ -37,10 +61,10 @@ MonoBehaviour:
   firingErrorMultiplier: 0.15
   projectileCount: 1
   spreadAngle: 12
-  recoilVertical: 12
-  recoilHorizontal: 6
+  recoilVertical: 10
+  recoilHorizontal: 3
   recoilKickback: 0.25
   maxKickback: 0.15
   recoilRecoverySpeed: 5
-  maxRecoil: 10
-  recoilSpreadMultiplier: 1.5
+  maxRecoil: 25
+  recoilSpreadMultiplier: 2

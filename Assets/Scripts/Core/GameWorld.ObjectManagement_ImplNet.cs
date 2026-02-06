@@ -9,6 +9,7 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
+        #region Private Methods
         private GameObject Server_SpawnObjectInternal(GameObject prefab, Vector3 position, Quaternion rotation, GamePlayer owner = null, Transform parent = null)
         {
             if (!prefab)
@@ -16,7 +17,7 @@ namespace TUA.Core
                 Debug.LogWarning("[GameWorld] Server_SpawnObjectInternal called with null prefab");
                 return null;
             }
-            
+
             object ownerConnection = null;
             if (owner != null && !TryGetConnection(owner, out ownerConnection))
             {
@@ -32,20 +33,19 @@ namespace TUA.Core
                 Destroy(instance);
                 return null;
             }
-            
+
             var networkManager = InstanceFinder.NetworkManager;
             if (networkManager && networkManager.ServerManager)
-            {
                 networkManager.ServerManager.Spawn(instance, ownerConnection as NetworkConnection);
-            }
             else
                 Debug.LogError($"[GameWorld] Server_SpawnObjectInternal: NetworkManager or ServerManager is null. Cannot spawn '{instance.name}'");
-            
+
             if (owner != null)
                 SetEntityOwnerUuid(instance, owner, true);
-            
+
             return instance;
         }
+
         private bool Server_DespawnObjectInternal(GameObject instance, object despawnType)
         {
             if (!instance)
@@ -62,9 +62,7 @@ namespace TUA.Core
             }
             var networkManager = InstanceFinder.NetworkManager;
             if (networkManager && networkManager.ServerManager)
-            {
                 networkManager.ServerManager.Despawn(networkObject, despawnTypeEnum);
-            }
             else
             {
                 Debug.LogError($"[GameWorld] Server_DespawnObjectInternal: NetworkManager or ServerManager is null. Cannot despawn '{instance.name}'");
@@ -72,6 +70,7 @@ namespace TUA.Core
             }
             return true;
         }
+
         private bool Server_SetOwnershipInternal(GameObject instance, GamePlayer owner, bool includeNested)
         {
             if (!instance)
@@ -111,6 +110,7 @@ namespace TUA.Core
             }
             return true;
         }
+
         private void Server_RestorePlayerOwnershipInternal(GamePlayer player, object newConnection)
         {
             if (player == null || !player.Uuid.IsValid || newConnection == null)
@@ -129,7 +129,7 @@ namespace TUA.Core
             {
                 if (!entity || !((NetBehaviour)entity).IsSpawned)
                     continue;
-                
+
                 var networkObject = entity.NetworkObject;
                 if (networkObject)
                     objectsToRestore.Add(networkObject);
@@ -145,6 +145,7 @@ namespace TUA.Core
                     networkObject.GiveOwnership(newConnection as NetworkConnection);
             }
         }
+
         private void Server_UpdateEntityOwnerUuidInternal(object networkObject)
         {
             if (networkObject == null || !((networkObject as NetworkObject)?.IsSpawned ?? false))
@@ -172,9 +173,7 @@ namespace TUA.Core
                 return;
             }
             if (_connectionToPlayer.TryGetValue(owner, out var gamePlayer) && gamePlayer != null)
-            {
                 entity.Server_SetOwnerPlayerUuid(gamePlayer.Uuid);
-            }
             else
             {
                 var oldOwner = entity.OwnerPlayerUuid;
@@ -182,6 +181,7 @@ namespace TUA.Core
                 Debug.LogWarning($"[GameWorld] Updated entity '{entity.gameObject.name}' owner UUID: {oldOwner} -> Empty (connection not found in _connectionToPlayer)");
             }
         }
+
         private void Server_TransferOwnershipToServerInternal(GamePlayer player)
         {
             if (player == null || !player.Uuid.IsValid)
@@ -202,17 +202,16 @@ namespace TUA.Core
                     continue;
                 var networkObject = entity.GetComponent<NetworkObject>();
                 if (networkObject && networkObject.IsSpawned)
-                {
                     networkObject.RemoveOwnership();
-                }
             }
         }
+
         private bool TryGetConnection(GamePlayer player, out object connection)
         {
             connection = null;
             if (player == null || !player.Uuid.IsValid)
                 return false;
-            
+
             if (IsServerSide)
             {
                 foreach (var kvp in _connectionToPlayer.Where(kvp => kvp.Value != null && kvp.Value.Uuid == player.Uuid))
@@ -224,28 +223,29 @@ namespace TUA.Core
             else if (IsClientSide)
             {
                 var localConnection = InstanceFinder.ClientManager?.Connection;
-                if (localConnection == null || !localConnection.IsValid) 
+                if (localConnection == null || !localConnection.IsValid)
                     return false;
-                
+
                 var localGamePlayer = LocalGamePlayer;
                 if (localGamePlayer == null || (localGamePlayer != player && localGamePlayer.Uuid != player.Uuid))
                     return false;
-                    
+
                 connection = localConnection;
                 return true;
             }
             return false;
         }
+
         private GamePlayer GetPlayerFromObjectInternal<T>(T component) where T : Component
         {
             var networkObject = component.GetComponent<NetworkObject>();
             if (!networkObject)
                 return null;
-            
+
             var connection = networkObject.Owner;
             if (!connection.IsValid)
                 return null;
-            
+
             if (IsServerSide)
             {
                 if (_connectionToPlayer.TryGetValue(connection, out var player))
@@ -259,16 +259,17 @@ namespace TUA.Core
             }
             return null;
         }
+
         private GamePlayer GetPlayerFromObjectInternal(GameObject go)
         {
             var networkObject = go.GetComponent<NetworkObject>();
             if (!networkObject)
                 return null;
-            
+
             var connection = networkObject.Owner;
             if (!connection.IsValid)
                 return null;
-            
+
             if (IsServerSide)
             {
                 if (_connectionToPlayer.TryGetValue(connection, out var player))
@@ -282,5 +283,6 @@ namespace TUA.Core
             }
             return null;
         }
+        #endregion
     }
 }

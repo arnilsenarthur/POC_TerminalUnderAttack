@@ -6,12 +6,12 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
-        #region Server Object Spawning
+        #region Public Methods
         public GameObject Server_SpawnObject(GameObject prefab, Vector3 position, Quaternion rotation, GamePlayer owner = null, Transform parent = null)
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_SpawnObject can only be called on server side");
-            
+
             return Server_SpawnObjectInternal(prefab, position, rotation, owner, parent);
         }
 
@@ -25,19 +25,15 @@ namespace TUA.Core
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_DespawnObject can only be called on server side");
-            
+
             return Server_DespawnObjectInternal(instance, despawnType);
         }
-
-        #endregion
-
-        #region Server Ownership Management
 
         public bool Server_SetOwnership(GameObject instance, GamePlayer owner, bool includeNested = false)
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_SetOwnership can only be called on server side");
-            
+
             return Server_SetOwnershipInternal(instance, owner, includeNested);
         }
 
@@ -45,7 +41,7 @@ namespace TUA.Core
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_TransferOwnershipToServer can only be called on server side");
-            
+
             Server_TransferOwnershipToServerInternal(player);
         }
 
@@ -53,7 +49,7 @@ namespace TUA.Core
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_RestorePlayerOwnership can only be called on server side");
-            
+
             Server_RestorePlayerOwnershipInternal(player, newConnection);
         }
 
@@ -61,13 +57,10 @@ namespace TUA.Core
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_UpdateEntityOwnerUuid can only be called on server side");
-            
+
             Server_UpdateEntityOwnerUuidInternal(networkObject);
         }
 
-        #endregion
-
-        #region Object Queries by Player
         public GameObject[] GetObjectsOwnedByPlayer(GamePlayer gamePlayer)
         {
             if (gamePlayer == null)
@@ -79,9 +72,7 @@ namespace TUA.Core
             foreach (var entity in entities)
             {
                 if (entity && entity.gameObject)
-                {
                     gameObjects.Add(entity.gameObject);
-                }
             }
 
             return gameObjects.ToArray();
@@ -101,9 +92,7 @@ namespace TUA.Core
                 {
                     var component = entity.GetComponent<T>();
                     if (component)
-                    {
                         components.Add(component);
-                    }
                 }
             }
 
@@ -117,16 +106,10 @@ namespace TUA.Core
 
             var entity = GetEntityOwnedByPlayer(gamePlayer);
             if (entity)
-            {
                 return entity.GetComponent<T>();
-            }
 
             return null;
         }
-
-        #endregion
-
-        #region Player Queries from Objects
 
         public GamePlayer GetPlayerFromObject<T>(T component) where T : Component
         {
@@ -158,11 +141,9 @@ namespace TUA.Core
 
             return GetPlayerFromObjectInternal(go);
         }
-
         #endregion
 
-        #region Private Helpers
-
+        #region Private Methods
         private void SetEntityOwnerUuid(GameObject obj, GamePlayer owner, bool includeChildren)
         {
             var ownerUuid = owner is { Uuid: { IsValid: true } } ? owner.Uuid : Uuid.Empty;
@@ -172,9 +153,9 @@ namespace TUA.Core
                 var entities = obj.GetComponentsInChildren<Entity>(true);
                 foreach (var entity in entities)
                 {
-                    if (!entity) 
+                    if (!entity)
                         continue;
-                    
+
                     var oldOwnerUuid = entity.OwnerPlayerUuid;
                     entity.Server_SetOwnerPlayerUuid(ownerUuid);
                     UpdateEntityOwner(entity, oldOwnerUuid, ownerUuid);
@@ -183,15 +164,14 @@ namespace TUA.Core
             else
             {
                 var entity = obj.GetComponent<Entity>();
-                if (!entity) 
+                if (!entity)
                     return;
-                
+
                 var oldOwnerUuid = entity.OwnerPlayerUuid;
                 entity.Server_SetOwnerPlayerUuid(ownerUuid);
                 UpdateEntityOwner(entity, oldOwnerUuid, ownerUuid);
             }
         }
-
         #endregion
     }
 }

@@ -6,9 +6,11 @@ namespace TUA.Core
 {
     public partial class GameWorld
     {
-        #region Player Data Management
+        #region Private Fields
         private readonly Dictionary<Uuid, IPlayerData> _playerData = new();
+        #endregion
         
+        #region Public Methods
         public IPlayerData Server_GetPlayerData(GamePlayer player)
         {
             if (!IsServerSide)
@@ -31,6 +33,32 @@ namespace TUA.Core
             return _clientPlayerDataSnapshots.GetValueOrDefault(player.Uuid);
         }
         
+        public void Server_SetPlayerData(GamePlayer player, IPlayerData data)
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("Server_SetPlayerData can only be called on server side");
+
+            if (player == null)
+                return;
+
+            var oldData = Server_GetPlayerData(player);
+            _playerData[player.Uuid] = data;
+
+            if (_gameMode)
+                _gameMode.InternalOnPlayerDataChanged(player, oldData, data, this);
+
+            Server_BroadcastPlayerDataSnapshot(player);
+        }
+
+        public bool Server_HasPlayerData(GamePlayer player)
+        {
+            if (!IsServerSide || player == null)
+                return false;
+            return _playerData.ContainsKey(player.Uuid);
+        }
+        #endregion
+
+        #region Private Methods
         private IPlayerData Server_GetPlayerDataSnapshot(GamePlayer player, GamePlayer requestingPlayer)
         {
             if (!IsServerSide)
@@ -47,30 +75,6 @@ namespace TUA.Core
                 return fullData;
             
             return _gameMode ? _gameMode.GetPlayerDataSnapshot(player, fullData, requestingPlayer, this) : null;
-        }
-        
-        public void Server_SetPlayerData(GamePlayer player, IPlayerData data)
-        {
-            if (!IsServerSide)
-                throw new InvalidOperationException("Server_SetPlayerData can only be called on server side");
-            
-            if (player == null)
-                return;
-            
-            var oldData = Server_GetPlayerData(player);
-            _playerData[player.Uuid] = data;
-            
-            if (_gameMode)
-                _gameMode.OnPlayerDataChanged(player, oldData, data, this);
-            
-            Server_BroadcastPlayerDataSnapshot(player);
-        }
-        
-        public bool Server_HasPlayerData(GamePlayer player)
-        {
-            if (!IsServerSide || player == null)
-                return false;
-            return _playerData.ContainsKey(player.Uuid);
         }
         
         private void Server_RemovePlayerData(GamePlayer player)

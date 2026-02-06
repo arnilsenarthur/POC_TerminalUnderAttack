@@ -13,21 +13,21 @@ namespace TUA.Audio
         [Header("Settings")]
         [Tooltip("Sound registry containing all available sound clips.")]
         public SoundRegistry soundRegistry;
-        
+
         [Tooltip("Settings asset for audio volume settings.")]
         public SettingsAsset audioSettings;
-        
+
         [Header("Audio Source Pool")]
         [Tooltip("Initial pool size for audio sources.")]
         [Min(1)]
         public int initialPoolSize = 10;
-        
+
         [Tooltip("Maximum pool size. If exceeded, oldest sources will be reused.")]
         [Min(1)]
         public int maxPoolSize = 50;
         #endregion
 
-        #region Fields
+        #region Private Fields
         private readonly Queue<AudioSource> _audioSourcePool = new();
         private readonly List<AudioSource> _activeSources = new();
         private readonly Dictionary<string, List<AudioPlayback>> _playbacksByKey = new();
@@ -40,8 +40,7 @@ namespace TUA.Audio
             base.Awake();
             _poolParent = new GameObject("AudioSourcePool");
             _poolParent.transform.SetParent(transform);
-            
-            // Pre-populate pool
+
             for (var i = 0; i < initialPoolSize; i++)
             {
                 var source = _CreateAudioSource();
@@ -57,8 +56,8 @@ namespace TUA.Audio
         }
         #endregion
 
-        #region Public API
-        public AudioPlayback PlayAudio(string key, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.General)
+        #region Public Methods
+        public AudioPlayback PlayAudio(string key, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.Gameplay)
         {
             if (!soundRegistry)
             {
@@ -82,17 +81,17 @@ namespace TUA.Audio
             source.clip = clip;
             source.volume = finalVolume;
             source.spatialBlend = 0f;
-            
+
             source.Play();
-            
+
             var playback = new AudioPlayback(this, source, key);
             _RegisterPlayback(key, playback);
             StartCoroutine(_ReturnToPoolWhenFinished(source, playback));
-            
+
             return playback;
         }
 
-        public AudioSource PlayLocal(string key, Vector3? position = null, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.General)
+        public AudioSource PlayLocal(string key, Vector3? position = null, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.Gameplay)
         {
             var playback = PlayAudio(key, volumeMultiplier, category);
             if (playback == null)
@@ -106,7 +105,26 @@ namespace TUA.Audio
             return playback.Source;
         }
 
-        public void PlayBroadcast(string key, Vector3? position = null, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.General)
+        public AudioPlayback PlayLocalFollowingCamera(string key, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.Gameplay)
+        {
+            var playback = PlayAudio(key, volumeMultiplier, category);
+            if (playback == null)
+                return null;
+
+            var mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                playback.Follow(mainCamera.transform);
+            }
+            else
+            {
+                playback.At(Vector3.zero);
+            }
+
+            return playback;
+        }
+
+        public void PlayBroadcast(string key, Vector3? position = null, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.Gameplay)
         {
             if (!IsServerSide)
             {
@@ -115,6 +133,17 @@ namespace TUA.Audio
             }
 
             RpcClient_PlaySound(key, position ?? Vector3.zero, position.HasValue, volumeMultiplier, (int)category);
+        }
+
+        public void PlayGlobalFollowingCamera(string key, float volumeMultiplier = 1f, AudioCategory category = AudioCategory.Gameplay)
+        {
+            if (!IsServerSide)
+            {
+                Debug.LogWarning("[AudioSystem] PlayGlobalFollowingCamera can only be called on server side!");
+                return;
+            }
+
+            RpcClient_PlaySoundFollowingCamera(key, volumeMultiplier, (int)category);
         }
 
         public float GetCategoryVolume(AudioCategory category)
@@ -137,7 +166,7 @@ namespace TUA.Audio
                 playback.Cancel();
             }
         }
-        
+
         public void CancelPlayback(AudioPlayback playback)
         {
             if (playback == null)
@@ -145,7 +174,9 @@ namespace TUA.Audio
 
             playback.Cancel();
         }
-        
+        #endregion
+
+        #region Internal Methods
         internal void ReturnAudioSource(AudioSource source)
         {
             if (!source)
@@ -173,7 +204,7 @@ namespace TUA.Audio
         private AudioSource _GetAudioSource()
         {
             AudioSource source;
-            
+
             if (_audioSourcePool.Count > 0)
                 source = _audioSourcePool.Dequeue();
             else if (_activeSources.Count < maxPoolSize)
@@ -182,7 +213,7 @@ namespace TUA.Audio
             {
                 source = _activeSources[0];
                 _activeSources.RemoveAt(0);
-                
+
                 AudioPlayback foundPlayback = null;
                 foreach (var playbacks in _playbacksByKey.Select(kvp => kvp.Value))
                 {
@@ -198,14 +229,14 @@ namespace TUA.Audio
                     if (foundPlayback != null)
                         break;
                 }
-                
+
                 if (foundPlayback != null)
                 {
                     Debug.LogWarning($"[AudioSystem] _GetAudioSource: Stopping playback '{foundPlayback.SoundKey}' because source is being reused");
                     foundPlayback._MarkCancelled();
                     _UnregisterPlayback(foundPlayback);
                 }
-                
+
                 source.Stop();
                 source.clip = null;
             }
@@ -221,9 +252,9 @@ namespace TUA.Audio
                 yield return null;
             }
 
-            if (playback.IsCancelled || !source) 
+            if (playback.IsCancelled || !source)
                 yield break;
-            
+
             _UnregisterPlayback(playback);
             ReturnAudioSource(source);
         }
@@ -247,9 +278,9 @@ namespace TUA.Audio
             if (playback == null || string.IsNullOrEmpty(playback.SoundKey))
                 return;
 
-            if (!_playbacksByKey.TryGetValue(playback.SoundKey, out var list)) 
+            if (!_playbacksByKey.TryGetValue(playback.SoundKey, out var list))
                 return;
-            
+
             list.Remove(playback);
             if (list.Count == 0)
             {

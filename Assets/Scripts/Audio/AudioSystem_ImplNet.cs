@@ -11,5 +11,12 @@ namespace TUA.Audio
             var category = (AudioCategory)categoryInt;
             PlayLocal(key, is3D ? position : null, volumeMultiplier, category);
         }
+
+        [ObserversRpc(ExcludeServer = false)]
+        private void RpcClient_PlaySoundFollowingCamera(string key, float volumeMultiplier, int categoryInt)
+        {
+            var category = (AudioCategory)categoryInt;
+            PlayLocalFollowingCamera(key, volumeMultiplier, category);
+        }
     }
 }

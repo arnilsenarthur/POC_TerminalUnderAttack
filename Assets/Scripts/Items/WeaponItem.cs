@@ -7,11 +7,12 @@ namespace TUA.Items
     [CreateAssetMenu(menuName = "TUA/WeaponItem", fileName = "NewWeaponItem")]
     public class WeaponItem : Item
     {
+        #region Serialized Fields
         [Header("Aiming")]
         public bool aimable = true;
         [Tooltip("If true, weapon always aims when selected, and right mouse button activates scope.")]
         public bool hasScope;
-        
+
         [Header("Scope Settings")]
         [Tooltip("Position relative to camera when scoped. This will be transformed by camera to fix the gun relative to camera.")]
         public Vector3 scopeTargetPosition = new(0f, -0.1f, 0.5f);
@@ -33,6 +34,8 @@ namespace TUA.Items
         public bool automatic;
         [Tooltip("Damage multiplier for headshots. Default is 1.5 (50% bonus damage).")]
         public float headshotDamageMultiplier = 1.5f;
+        [Tooltip("Distance falloff curve for damage. X-axis is normalized distance (0 = point blank, 1 = max range). Y-axis is damage multiplier. Default: 1.0 at 0, 0.75 at 1 (linear).")]
+        public AnimationCurve distanceDamageFalloffCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.75f);
 
         [Header("Ammunition")]
         public int defaultAmmo;
@@ -76,7 +79,9 @@ namespace TUA.Items
         public float maxRecoil = 10f;
         [Tooltip("Spread multiplier while in recoil. 1.0 = normal spread, 2.0 = double spread during recoil.")]
         public float recoilSpreadMultiplier = 1.5f;
+        #endregion
 
+        #region Public Methods
         public override ItemStack GetDefaultItemStack()
         {
             return new WeaponItemStack
@@ -88,5 +93,6 @@ namespace TUA.Items
         }
 
         public override bool IsAimable(IInventoryHolder holder, ItemStack stack) => aimable;
+        #endregion
     }
 }
