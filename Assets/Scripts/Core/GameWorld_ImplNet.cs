@@ -16,6 +16,7 @@ namespace TUA.Core
     {
         #region Private Fields
         private readonly SyncList<GamePlayer> _allPlayers = new();
+        private readonly SyncList<Team> _teams = new();
         private readonly Dictionary<object, GamePlayer> _connectionToPlayer = new();
         private Uuid _localPlayerUuid;
         #endregion
@@ -182,6 +183,7 @@ namespace TUA.Core
                             if (_gameSettings != null)
                                 _gameMode.InternalSetGameSettings(_gameSettings);
                             _gameMode.InternalOnWorldStart(this);
+                            Server_UpdateTeamsFromGameModeInternal();
                             Server_SetGameModeRunning(true);
                         }
                     }
@@ -189,6 +191,7 @@ namespace TUA.Core
                 case LocalConnectionState.Stopped:
                     Server_SetGameModeRunning(false);
                     _gameMode?.InternalOnWorldEnd(this);
+                    _teams.Clear();
                     _gameMode = null;
                     CleanupTickSystem();
                     break;

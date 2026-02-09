@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace TUA.Core
 {
@@ -7,6 +8,7 @@ namespace TUA.Core
     {
         #region Properties
         public string Name { get; set; }
+        public Color Color { get; set; }
         #endregion
 
         #region Constructors
@@ -18,6 +20,12 @@ namespace TUA.Core
         public Team(string name)
         {
             Name = name;
+        }
+
+        public Team(string name, Color color)
+        {
+            Name = name;
+            Color = color;
         }
         #endregion
     }

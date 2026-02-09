@@ -14,6 +14,7 @@ namespace TUA.Systems
         public Transform deliveryPoint;
         public float radius = 5f;
         public HackerToolItem hackerToolItem;
+        public bool ensureBoxCollider = true;
         #endregion
 
         #region Unity Callbacks
@@ -21,6 +22,7 @@ namespace TUA.Systems
         {
             base.OnEnable();
             GameWorld.OnTickEvent += _OnTick;
+            _EnsureDeliveryCollider();
         }
 
         protected override void OnDisable()
@@ -40,6 +42,28 @@ namespace TUA.Systems
         #endregion
 
         #region Private Methods
+        private void _EnsureDeliveryCollider()
+        {
+            if (!ensureBoxCollider || !deliveryPoint)
+                return;
+
+            var go = deliveryPoint.gameObject;
+            if (!go)
+                return;
+
+            var box = go.GetComponent<BoxCollider>();
+            if (!box)
+                box = go.AddComponent<BoxCollider>();
+
+            box.isTrigger = true;
+            box.center = Vector3.zero;
+
+            var size = Mathf.Max(0f, radius) * 2f;
+            if (size <= 0f)
+                size = 1f;
+            box.size = new Vector3(size, size, size);
+        }
+
         private void _OnTick(float deltaTime)
         {
             if (!GameWorld.Instance.IsServerSide)

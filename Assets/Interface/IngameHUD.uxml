@@ -5,7 +5,7 @@
         <ui:VisualElement name="TopRow" class="hud-row top-row">
             <ui:VisualElement name="MinimapArea" class="minimap-container">
                 <ui:VisualElement name="Minimap" class="minimap-circle tua-panel">
-                    <ui:Label text="MAP" style="color: rgba(255, 255, 255, 0.3); font-size: 20px; -unity-text-align: middle-center; height: 100%;"/>
+                    <ui:Image name="MinimapImage" class="minimap-image" picking-mode="Ignore" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="KillFeed" class="kill-feed">

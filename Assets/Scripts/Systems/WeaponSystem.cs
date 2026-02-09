@@ -174,16 +174,8 @@ namespace TUA.Systems
                 Vector3 hitPoint = actuallyHit ? hit.point : origin + shotDirection * range;
                 
                 if (actuallyHit)
-                {
-                    Debug.Log($"[WeaponSystem] Server_Shoot: Raycast HIT - Origin: {origin}, Direction: {shotDirection}, Hit Point: {hitPoint}, Collider: {hit.collider.name} (Layer: {hit.collider.gameObject.layer}), Distance: {hit.distance:F2}m");
                     _OnWeaponHit(weaponUser, hit, damage, weaponItem, origin, range);
-                }
-                else
-                {
-                    Debug.Log($"[WeaponSystem] Server_Shoot: Raycast MISS - Origin: {origin}, Direction: {shotDirection}, Max Range: {range}m, End Point: {hitPoint}");
-                    _OnWeaponMiss(weaponUser, hitPoint);
-                }
-                
+  
                 hitPoints.Add(hitPoint);
                 hitFlags.Add(actuallyHit);
                 averageHitPoint += hitPoint;
@@ -497,10 +489,6 @@ namespace TUA.Systems
                 var direction = (hit.point - origin).normalized;
                 rb.AddForceAtPosition(direction * weaponItem.hitForce, hit.point, ForceMode.Impulse);
             }
-        }
-
-        private void _OnWeaponMiss(IWeaponUser shooter, Vector3 endPoint)
-        {
         }
         
         private Transform FindChildRecursive(Transform parent, string name)

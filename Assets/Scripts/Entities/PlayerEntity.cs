@@ -13,7 +13,7 @@ using UnityEngine.Serialization;
 namespace TUA.Entities
 {
     [RequireComponent(typeof(CharacterController))]
-    public abstract partial class PlayerEntity : Entity, IWeaponUser, IHealth
+    public abstract partial class PlayerEntity : Entity, IWeaponUser, IHealth, IMinimapObject
     {
         #region Serialized Fields
         [Header("Movement")]
@@ -946,6 +946,8 @@ var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftS
         {
             if (IsWindowOpen())
                 return;
+            
+            // Handle number key selection (1-9)
             for (var i = 0; i < 9; i++)
             {
                 if (Input.GetKeyDown(KeyCode.Alpha1 + i))
@@ -954,8 +956,32 @@ var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftS
                     break;
                 }
             }
-        }
 
+            // Handle scroll wheel selection
+            var scrollDelta = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(scrollDelta) > 0.01f && Inventory != null)
+            {
+                var currentSlot = Inventory.selectedSlot;
+                var slotCount = Inventory.slots.Length;
+                var direction = scrollDelta > 0 ? 1 : -1;
+                
+                // If no slot is currently selected, start from slot 0
+                if (currentSlot < 0 || currentSlot >= slotCount)
+                    currentSlot = 0;
+                
+                // Find next/previous valid slot (wrapping around)
+                var targetSlot = currentSlot;
+                for (var i = 0; i < slotCount; i++)
+                {
+                    targetSlot = (targetSlot + direction + slotCount) % slotCount;
+                    if (Inventory.CanSelectSlot(targetSlot))
+                    {
+                        Client_RequestSelectSlot(targetSlot);
+                        break;
+                    }
+                }
+            }
+        }
         private void HandleWeaponInput()
         {
             if (IsWindowOpen())
@@ -1237,6 +1263,38 @@ var inputSneak = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftS
                 _aimReadyAt = Time.time + Mathf.Max(0f, aimInTime);
             else
                 _aimReadyAt = float.PositiveInfinity;
+        }
+        #endregion
+
+        #region IMinimapObject Implementation
+        public bool GetMinimapTarget(out Vector3 worldPos, out Color color, out string sprite, out float scale, out float rotationY)
+        {
+            color = Color.gray;
+            var targetEntity = GameWorld.Instance?.GetTargetEntity<Entity>();
+            if(targetEntity != null && targetEntity == this)
+            {
+                color = Color.white;
+            }
+            else
+            {
+                var team = GameWorld.Instance?.LocalGamePlayer?.TeamName;
+                if(string.Equals(team,GamePlayer?.TeamName))
+                {
+                    worldPos = Vector3.zero;
+                    sprite = "";
+                    scale = 0f;
+                    rotationY = 0f;
+                    return false;
+                }
+                
+                color = GameWorld.Instance?.GetTeamColor(team) ?? Color.gray;
+            }
+
+            worldPos = transform.position;
+            sprite = "player";
+            scale = 1f;
+            rotationY = transform.eulerAngles.y;
+            return true;
         }
         #endregion
     }

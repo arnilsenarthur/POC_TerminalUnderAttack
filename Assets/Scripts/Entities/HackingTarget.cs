@@ -1,10 +1,11 @@
 using TUA.Core;
+using TUA.Core.Interfaces;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace TUA.Entities
 {
-    public partial class HackingTarget : Entity
+    public partial class HackingTarget : Entity, IMinimapObject
     {
         #region Serialized Fields
         [Header("Settings")]
@@ -97,6 +98,18 @@ namespace TUA.Entities
         private void _OnHackingProgressChanged(float progress)
         {
             hackingProgressFill.localScale = new Vector3(progress, 1f, 1f);
+        } 
+        #endregion
+
+        #region IMinimapObject Implementation
+        public bool GetMinimapTarget(out Vector3 worldPos, out Color color, out string sprite, out float scale, out float rotationY)
+        {
+            worldPos = transform.position;
+            color = IsHacked ? new Color(this.color.r, this.color.g, this.color.b, 0.35f) : this.color;
+            sprite = "target";
+            scale = IsBeingHacked ? Mathf.PingPong(Time.time, 0.25f) + 1.0f : 1.0f;
+            rotationY = 0;
+            return true;
         }
         #endregion
     }

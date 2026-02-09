@@ -12,6 +12,9 @@ namespace TUA.Core
         private TimeManager _timeManager;
         private readonly SyncVar<int> _tickRate = new(64);
         private readonly SyncVar<bool> _gameModeRunning = new();
+        private readonly SyncVar<string> _matchInfoMessage = new();
+        private readonly SyncVar<bool> _matchInfoShowTime = new();
+        private readonly SyncVar<float> _matchInfoTimeSeconds = new();
         #endregion
         
         #region Unity Callbacks
@@ -19,6 +22,9 @@ namespace TUA.Core
         {
             TickRate = _tickRate.Value;
             IsGameModeRunning = _gameModeRunning.Value;
+            MatchInfoMessage = _matchInfoMessage.Value;
+            MatchInfoShowTime = _matchInfoShowTime.Value;
+            MatchInfoTimeSeconds = _matchInfoTimeSeconds.Value;
             _tickRate.OnChange += (_, next, asServer) =>
             {
                 TickRate = next;
@@ -28,6 +34,18 @@ namespace TUA.Core
             _gameModeRunning.OnChange += (_, next, _) =>
             {
                 IsGameModeRunning = next;
+            };
+            _matchInfoMessage.OnChange += (_, next, _) =>
+            {
+                MatchInfoMessage = next;
+            };
+            _matchInfoShowTime.OnChange += (_, next, _) =>
+            {
+                MatchInfoShowTime = next;
+            };
+            _matchInfoTimeSeconds.OnChange += (_, next, _) =>
+            {
+                MatchInfoTimeSeconds = next;
             };
         }
 
@@ -74,6 +92,12 @@ namespace TUA.Core
                 };
                 _gameModeRunning.Value = false;
                 _gameModeRunning.UpdateSendRate(0f);
+                _matchInfoMessage.Value = string.Empty;
+                _matchInfoMessage.UpdateSendRate(0f);
+                _matchInfoShowTime.Value = false;
+                _matchInfoShowTime.UpdateSendRate(0f);
+                _matchInfoTimeSeconds.Value = 0f;
+                _matchInfoTimeSeconds.UpdateSendRate(0f);
                 _timeManager.SetTickRate((ushort)_tickRate.Value);
             }
             _timeManager.OnTick += TimeManager_OnTick;
@@ -116,6 +140,41 @@ namespace TUA.Core
             _gameModeRunning.UpdateSendRate(0f);
         }
 
+        private void Server_SetMatchInfoInternal(string message, bool showTime, float timeSeconds)
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("Server_SetMatchInfoInternal can only be called on server side");
+
+            _matchInfoMessage.Value = message ?? string.Empty;
+            _matchInfoMessage.UpdateSendRate(0f);
+            _matchInfoShowTime.Value = showTime;
+            _matchInfoShowTime.UpdateSendRate(0f);
+            _matchInfoTimeSeconds.Value = Mathf.Max(0f, timeSeconds);
+            _matchInfoTimeSeconds.UpdateSendRate(0f);
+        }
+
+        private void Server_UpdateTeamsFromGameModeInternal()
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("Server_UpdateTeamsFromGameModeInternal can only be called on server side");
+
+            if (!_gameMode)
+                return;
+
+            var teams = _gameMode.InternalGetTeams(this);
+            if (teams == null || teams.Count == 0)
+                return;
+
+            _teams.Clear();
+            for (var i = 0; i < teams.Count; i++)
+            {
+                var t = teams[i];
+                if (t == null || string.IsNullOrWhiteSpace(t.Name))
+                    continue;
+                _teams.Add(new Team(t.Name, t.Color));
+            }
+        }
+
         private void TimeManager_OnTick()
         {
             var dt = _timeManager ? _timeManager.TickDelta : 0d;
@@ -128,7 +187,9 @@ namespace TUA.Core
             
             var tickDelta = (float)dt;
             if (IsServerSide)
+            {
                 _gameMode?.InternalOnTick(tickDelta, this);
+            }
             
             OnTickEvent?.Invoke(tickDelta);
         }

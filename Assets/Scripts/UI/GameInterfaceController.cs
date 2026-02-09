@@ -71,6 +71,10 @@ namespace TUA.UI
         private VisualElement _team2Players;
         private readonly Dictionary<HackingTarget, VisualElement> _hackingTargetDots = new();
         private readonly Dictionary<HackingTarget, Coroutine> _hackingFlashCoroutines = new();
+        private Label _matchInfoMessageText;
+        private Label _matchInfoTimerText;
+        private readonly List<Uuid> _lastTeam1 = new();
+        private readonly List<Uuid> _lastTeam2 = new();
         private VisualElement _damageFlashOverlay;
         private VisualElement _flashOverlay;
         private float _previousHealth = -1f;
@@ -80,6 +84,13 @@ namespace TUA.UI
         private Button _spectatorPrevButton;
         private Button _spectatorNextButton;
         private Label _spectatorNameLabel;
+        
+        [Header("Minimap")]
+        [SerializeField] private float minimapImageScale = 0.35f;
+        [SerializeField] private bool rotateMinimapWithCamera = true;
+        private VisualElement _minimapElement;
+        private Image _minimapImage;
+        private Vector2 _minimapSize;
         #endregion
         
         #region Unity Callbacks
@@ -149,9 +160,12 @@ namespace TUA.UI
                 _UpdateHackingProgress();
             
             _UpdateHackingTargets();
+            _UpdateTeams();
             _UpdateTeamsAndTargetsVisibility();
             _UpdateReloadProgress();
             _UpdateSpectatorMenu();
+            _UpdateMatchInfo();
+            _UpdateMinimap();
         }
         #endregion
         
@@ -190,6 +204,13 @@ namespace TUA.UI
 
             if (_flashOverlay == null)
                 Debug.LogWarning("[GameInterfaceController] FlashOverlay not found in HUD UXML!");
+
+            _minimapElement = _root.Q<VisualElement>("Minimap");
+            _minimapImage = _minimapElement?.Q<Image>("MinimapImage");
+            if (_minimapElement != null)
+                _minimapElement.RegisterCallback<GeometryChangedEvent>(_OnMinimapGeometryChanged);
+            if (_minimapImage != null)
+                _minimapImage.style.position = Position.Absolute;
             
             var inventoryContainer = _root.Q<VisualElement>("InventoryContainer");
             _reloadProgressBar = inventoryContainer?.Q<VisualElement>("ReloadProgressBar");
@@ -248,6 +269,15 @@ namespace TUA.UI
             _team2Players = matchDisplayContainer.Q<VisualElement>("Team2Players");
             _hackingTargetsRow = matchDisplayContainer.Q<VisualElement>("HackingTargetsRow");
             _hackingTargetsContainer = matchDisplayContainer.Q<VisualElement>("HackingTargetsContainer");
+
+            var matchInfo = matchDisplayContainer.Q<VisualElement>("MatchInfo");
+            _matchInfoMessageText = matchInfo?.Q<Label>("RoundText");
+            _matchInfoTimerText = matchInfo?.Q<Label>("TimerText");
+
+            _team1Players?.Clear();
+            _team2Players?.Clear();
+            _lastTeam1.Clear();
+            _lastTeam2.Clear();
             
             // Initialize spectator menu
             _spectatorMenu = _root.Q<VisualElement>("SpectatorMenu");
@@ -265,6 +295,121 @@ namespace TUA.UI
                 
                 _spectatorMenu.style.display = DisplayStyle.None;
             }
+        }
+
+        private void _OnMinimapGeometryChanged(GeometryChangedEvent evt)
+        {
+            _minimapSize = evt.newRect.size;
+        }
+
+        private void _UpdateMinimap()
+        {
+            if (_minimapElement == null || _minimapImage == null)
+                return;
+
+            var minimapController = MinimapController.Instance;
+            if (minimapController == null)
+                return;
+
+            var renderTexture = minimapController.TargetRenderTexture;
+            if (renderTexture == null)
+                return;
+
+            if (_minimapImage.image != renderTexture)
+                _minimapImage.image = renderTexture;
+
+            _minimapImage.scaleMode = ScaleMode.StretchToFill;
+
+            var maskWidth = _minimapSize.x > 0f ? _minimapSize.x : _minimapElement.resolvedStyle.width;
+            var maskHeight = _minimapSize.y > 0f ? _minimapSize.y : _minimapElement.resolvedStyle.height;
+            if (maskWidth <= 0f || maskHeight <= 0f)
+                return;
+
+            var minScaleX = renderTexture.width > 0 ? (maskWidth / renderTexture.width) : 1f;
+            var minScaleY = renderTexture.height > 0 ? (maskHeight / renderTexture.height) : 1f;
+            var minScale = Mathf.Max(minScaleX, minScaleY);
+            var zoom = Mathf.Max(minimapImageScale, minScale);
+            var imageWidth = renderTexture.width * zoom;
+            var imageHeight = renderTexture.height * zoom;
+
+            _minimapImage.style.width = imageWidth;
+            _minimapImage.style.height = imageHeight;
+
+            var cameraWorldPos = Vector3.zero;
+            var cameraWorldRot = Quaternion.identity;
+            if (CameraSystem.Instance != null && CameraSystem.Instance.mainCamera != null)
+            {
+                cameraWorldPos = CameraSystem.Instance.mainCamera.transform.position;
+                cameraWorldRot = CameraSystem.Instance.mainCamera.transform.rotation;
+            }
+            else if (_currentTargetEntity != null)
+            {
+                _currentTargetEntity.GetCameraView(out cameraWorldPos, out cameraWorldRot, out _);
+            }
+
+            var cameraPixelTex = minimapController.WorldToMinimapPixel(cameraWorldPos);
+            var cameraPixel = new Vector2(cameraPixelTex.x, renderTexture.height - cameraPixelTex.y) * zoom;
+            var centerX = maskWidth * 0.5f;
+            var centerY = maskHeight * 0.5f;
+
+            var angleDeg = rotateMinimapWithCamera ? -cameraWorldRot.eulerAngles.y : 0f;
+            _minimapImage.style.rotate = new Rotate(new Angle(angleDeg, AngleUnit.Degree));
+
+            var dx = cameraPixel.x - (imageWidth * 0.5f);
+            var dy = cameraPixel.y - (imageHeight * 0.5f);
+            var rad = angleDeg * Mathf.Deg2Rad;
+            var cos = Mathf.Cos(rad);
+            var sin = Mathf.Sin(rad);
+            var rotatedDx = (dx * cos) - (dy * sin);
+            var rotatedDy = (dx * sin) + (dy * cos);
+
+            var left = centerX - (imageWidth * 0.5f) - rotatedDx;
+            var top = centerY - (imageHeight * 0.5f) - rotatedDy;
+
+            _minimapImage.style.left = left;
+            _minimapImage.style.top = top;
+        }
+
+        private void _UpdateMatchInfo()
+        {
+            if (_matchInfoMessageText == null && _matchInfoTimerText == null)
+                return;
+
+            var gameWorld = GameWorld.Instance;
+            if (!gameWorld)
+                return;
+
+            if (_matchInfoMessageText != null)
+                _matchInfoMessageText.text = gameWorld.MatchInfoMessage ?? string.Empty;
+
+            if (_matchInfoTimerText != null)
+            {
+                if (!gameWorld.MatchInfoShowTime)
+                {
+                    _matchInfoTimerText.style.display = DisplayStyle.None;
+                }
+                else
+                {
+                    _matchInfoTimerText.style.display = DisplayStyle.Flex;
+                    _matchInfoTimerText.text = _FormatTime(gameWorld.MatchInfoTimeSeconds);
+                }
+            }
+        }
+
+        private static string _FormatTime(float seconds)
+        {
+            if (seconds <= 0f)
+                return "0:00";
+
+            var totalSeconds = Mathf.Max(0, Mathf.RoundToInt(seconds));
+            var s = totalSeconds % 60;
+            var totalMinutes = totalSeconds / 60;
+            if (totalMinutes < 60)
+                return $"{totalMinutes}:{s:00}";
+
+            var m = totalMinutes % 60;
+            var h = totalMinutes / 60;
+            return $"{h}:{m:00}:{s:00}";
         }
         
         private void _UpdateHackingTargets()
@@ -359,6 +504,121 @@ namespace TUA.UI
             
             _hackingFlashCoroutines.Remove(target);
         }
+
+        private void _UpdateTeams()
+        {
+            if (_team1Players == null || _team2Players == null)
+                return;
+
+            var world = GameWorld.Instance;
+            var allPlayers = world?.AllPlayers;
+            if (allPlayers == null)
+                return;
+
+            var teamList = world.GetTeams();
+            var team1Name = teamList is { Count: > 0 } ? teamList[0]?.Name : null;
+            var team2Name = teamList is { Count: > 1 } ? teamList[1]?.Name : null;
+            if (string.IsNullOrWhiteSpace(team1Name) && string.IsNullOrWhiteSpace(team2Name))
+            {
+                team1Name = "guards";
+                team2Name = "invaders";
+            }
+            else if (string.IsNullOrWhiteSpace(team1Name))
+            {
+                team1Name = team2Name;
+                team2Name = null;
+            }
+
+            var team1 = new List<GamePlayer>();
+            var team2 = new List<GamePlayer>();
+
+            foreach (var p in allPlayers)
+            {
+                if (p == null || !p.IsOnline || p.IsSpectator)
+                    continue;
+
+                if (!string.IsNullOrEmpty(team1Name) && string.Equals(p.TeamName, team1Name, StringComparison.OrdinalIgnoreCase))
+                    team1.Add(p);
+                else if (!string.IsNullOrEmpty(team2Name) && string.Equals(p.TeamName, team2Name, StringComparison.OrdinalIgnoreCase))
+                    team2.Add(p);
+            }
+
+            team1 = team1.OrderBy(p => p.Name).ToList();
+            team2 = team2.OrderBy(p => p.Name).ToList();
+
+            var nextTeam1Uuids = team1.Select(p => p.Uuid).ToList();
+            var nextTeam2Uuids = team2.Select(p => p.Uuid).ToList();
+
+            if (!SequenceEqual(_lastTeam1, nextTeam1Uuids))
+            {
+                _lastTeam1.Clear();
+                _lastTeam1.AddRange(nextTeam1Uuids);
+                var c = world.GetTeamColor(team1Name);
+                if (c.a <= 0f)
+                    c = _GetFallbackTeamColor(team1Name);
+                RebuildTeamUI(_team1Players, team1, c);
+            }
+
+            if (!SequenceEqual(_lastTeam2, nextTeam2Uuids))
+            {
+                _lastTeam2.Clear();
+                _lastTeam2.AddRange(nextTeam2Uuids);
+                var c = world.GetTeamColor(team2Name);
+                if (c.a <= 0f)
+                    c = _GetFallbackTeamColor(team2Name);
+                RebuildTeamUI(_team2Players, team2, c);
+            }
+
+            return;
+
+            static bool SequenceEqual(List<Uuid> a, List<Uuid> b)
+            {
+                if (ReferenceEquals(a, b))
+                    return true;
+                if (a == null || b == null)
+                    return false;
+                if (a.Count != b.Count)
+                    return false;
+                for (var i = 0; i < a.Count; i++)
+                {
+                    if (a[i] != b[i])
+                        return false;
+                }
+                return true;
+            }
+
+            void RebuildTeamUI(VisualElement container, List<GamePlayer> players, Color fallbackColor)
+            {
+                container.Clear();
+
+                foreach (var player in players)
+                {
+                    if (player == null)
+                        continue;
+
+                    var icon = new VisualElement();
+                    icon.AddToClassList("player-square");
+
+                    var avatar = GetPlayerAvatar(player);
+                    if (avatar != null)
+                        icon.style.backgroundImage = new StyleBackground(avatar);
+                    else
+                        icon.style.backgroundColor = new StyleColor(fallbackColor);
+
+                    container.Add(icon);
+                }
+            }
+        }
+
+        private static Color _GetFallbackTeamColor(string teamName)
+        {
+            if (string.Equals(teamName, "guards", StringComparison.OrdinalIgnoreCase))
+                return new Color(0f, 120f / 255f, 1f);
+            if (string.Equals(teamName, "invaders", StringComparison.OrdinalIgnoreCase))
+                return new Color(220f / 255f, 50f / 255f, 50f / 255f);
+            return Color.gray;
+        }
+
         private void _UpdateTeamsAndTargetsVisibility()
         {
             if (_team1Row != null && _team1Players != null)
@@ -369,6 +629,11 @@ namespace TUA.UI
             
             if (_hackingTargetsRow != null && _hackingTargetsContainer != null)
                 _hackingTargetsRow.style.display = _hackingTargetsContainer.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private Sprite GetPlayerAvatar(GamePlayer player)
+        {
+            return null;
         }
         
         private void _OnInventoryChanged(Inventory inventory)

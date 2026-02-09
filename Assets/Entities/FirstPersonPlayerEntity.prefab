@@ -65,7 +65,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584314703464527698
+  _initializedTimestamp: -8584310754167352413
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -81,7 +81,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 3
+  <PrefabId>k__BackingField: 4
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 10445381570999345219
   SceneId: 0
@@ -130,18 +130,18 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 1848295115748320747}
   _networkObjectCache: {fileID: 1848295115748320747}
-  walkSpeed: 4.5
-  stealthSpeed: 2
+  walkSpeed: 5
+  stealthSpeed: 3.75
   gravity: 20
   jumpHeight: 1
   groundStickVelocity: 2
   airControl: 0.25
   rotationSpeed: 100
-  _settings: {fileID: 11400000, guid: d55245e269c578444b25e33ded9acc6f, type: 2}
-  _cameraSensitivityXKey: camera.sensitivity_x
-  _cameraSensitivityYKey: camera.sensitivity_y
-  _cameraInvertedXKey: camera.inverted_x
-  _cameraInvertedYKey: camera.inverted_y
+  settings: {fileID: 11400000, guid: d55245e269c578444b25e33ded9acc6f, type: 2}
+  cameraSensitivityXKey: camera.sensitivity_x
+  cameraSensitivityYKey: camera.sensitivity_y
+  cameraInvertedXKey: camera.inverted_x
+  cameraInvertedYKey: camera.inverted_y
   headHeight: 1.6
   animator: {fileID: 3438404127266465194}
   walkingXParameter: WalkingX

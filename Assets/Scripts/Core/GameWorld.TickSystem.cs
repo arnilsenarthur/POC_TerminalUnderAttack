@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace TUA.Core
 {
@@ -10,6 +11,9 @@ namespace TUA.Core
         public uint NetworkTick { get; private set; }
         public uint LocalTick { get; private set; }
         public bool IsGameModeRunning { get; private set; }
+        public string MatchInfoMessage { get; private set; }
+        public bool MatchInfoShowTime { get; private set; }
+        public float MatchInfoTimeSeconds { get; private set; }
         #endregion
 
         #region Static Events
@@ -29,6 +33,20 @@ namespace TUA.Core
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_SetGameModeRunning can only be called on server side");
             Server_SetGameModeRunningInternal(running);
+        }
+
+        public void Server_SetMatchInfo(string message, bool showTime, float timeSeconds)
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("Server_SetMatchInfo can only be called on server side");
+            Server_SetMatchInfoInternal(message, showTime, timeSeconds);
+        }
+
+        public void Server_ClearMatchInfo()
+        {
+            if (!IsServerSide)
+                throw new InvalidOperationException("Server_ClearMatchInfo can only be called on server side");
+            Server_SetMatchInfoInternal(string.Empty, false, 0f);
         }
         #endregion
     }

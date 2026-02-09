@@ -23,6 +23,7 @@ MonoBehaviour:
   recoilMultiplierWhenScoping: 0.5
   damage: 80
   range: 120
+  hitForce: 100
   fireRate: 1.4
   automatic: 0
   headshotDamageMultiplier: 1.5
@@ -58,9 +59,9 @@ MonoBehaviour:
   reloadClipLength: 2.067
   shotSoundKey: weapon_sniper_rifle_shot
   reloadSoundKey: weapon_sniper_rifle_reload
-  firingErrorMultiplier: 0.15
+  firingErrorMultiplier: 0.1
   projectileCount: 1
-  spreadAngle: 12
+  spreadAngle: 8
   recoilVertical: 10
   recoilHorizontal: 3
   recoilKickback: 0.25

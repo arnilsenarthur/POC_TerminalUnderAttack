@@ -576,6 +576,12 @@
     overflow: hidden;
 }
 
+.minimap-image {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
 .match-display-container {
     position: absolute;
     left: 50%;
