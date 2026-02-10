@@ -76,7 +76,11 @@ namespace TUA.Systems
             var spawnPosition = _CalculateSpawnPosition(origin, direction);
             var spawnRotation = Quaternion.LookRotation(throwVelocity.normalized);
 
-            if (!_SpawnGadgetEntity(prefab, spawnPosition, spawnRotation, weaponUser.UserUuid, gadgetItem, throwVelocity))
+            var throwerUuid = weaponUser.UserUuid;
+            if (weaponUser is Entity throwerEntity && throwerEntity.GamePlayer != null)
+                throwerUuid = throwerEntity.GamePlayer.Uuid;
+
+            if (!_SpawnGadgetEntity(prefab, spawnPosition, spawnRotation, throwerUuid, gadgetItem, throwVelocity))
                 return false;
 
             _UpdateInventoryAfterThrow(weaponUser, inventory, selectedSlot, gadgetStack);

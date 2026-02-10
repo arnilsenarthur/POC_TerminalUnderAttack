@@ -42,12 +42,12 @@ namespace TUA.GameModes
         private const string ResultsMatchOverTitleKey = "results.title.match_over";
         private const string ResultsInvadersWinTitleKey = "results.title.invaders_win";
         private const string ResultsGuardsWinTitleKey = "results.title.guards_win";
-        private const string ResultsTargetsHackedObjectiveKey = "results.objective.targets_hacked";
+        private const string ResultsDisksDeliveredObjectiveKey = "results.objective.disks_delivered";
         private const string ScoreboardInvadersHeaderKey = "scoreboard.team.invaders";
         private const string ScoreboardGuardsHeaderKey = "scoreboard.team.guards";
         private const string ScoreboardUnassignedHeaderKey = "scoreboard.team.unassigned";
-        private const string ScoreboardTargetsHackedKey = "scoreboard.stat.targets_hacked";
-        private const string ScoreboardTargetsUnhackedKey = "scoreboard.stat.targets_unhacked";
+        private const string ScoreboardDisksDeliveredKey = "scoreboard.stat.disks_delivered";
+        private const string ScoreboardDisksUndeliveredKey = "scoreboard.stat.disks_undelivered";
 
         public enum GS
         {
@@ -189,7 +189,7 @@ namespace TUA.GameModes
 
             var teams = gameWorld.GetTeams() ?? new List<Team>();
             var allTargets = gameWorld.GetEntities<HackingTarget>();
-            var hackedTargets = allTargets.Count(t => t && t.IsHacked);
+            var deliveredDisks = allTargets.Count(t => t && t.IsDelivered);
 
             foreach (var team in teams)
             {
@@ -206,12 +206,12 @@ namespace TUA.GameModes
                 if (string.Equals(team.Name, "invaders", StringComparison.OrdinalIgnoreCase))
                 {
                     section.Header = LocalizationManager.Get(ScoreboardInvadersHeaderKey);
-                    section.StatLine = LocalizationManager.Get(ScoreboardTargetsHackedKey, hackedTargets);
+                    section.StatLine = LocalizationManager.Get(ScoreboardDisksDeliveredKey, deliveredDisks);
                 }
                 else if (string.Equals(team.Name, "guards", StringComparison.OrdinalIgnoreCase))
                 {
                     section.Header = LocalizationManager.Get(ScoreboardGuardsHeaderKey);
-                    section.StatLine = LocalizationManager.Get(ScoreboardTargetsUnhackedKey, Mathf.Max(0, allTargets.Count - hackedTargets));
+                    section.StatLine = LocalizationManager.Get(ScoreboardDisksUndeliveredKey, Mathf.Max(0, allTargets.Count - deliveredDisks));
                 }
 
                 var players = gameWorld.GetPlayersInTeam(team.Name)
@@ -300,9 +300,9 @@ namespace TUA.GameModes
             if (totalTargets <= 0)
                 return;
 
-            var hackedTargets = allTargets.Count(t => t && t.IsHacked);
-            results.ObjectiveLine = LocalizationManager.Get(ResultsTargetsHackedObjectiveKey, hackedTargets, totalTargets);
-            results.Title = LocalizationManager.Get(hackedTargets >= totalTargets ? ResultsInvadersWinTitleKey : ResultsGuardsWinTitleKey);
+            var deliveredDisks = allTargets.Count(t => t && t.IsDelivered);
+            results.ObjectiveLine = LocalizationManager.Get(ResultsDisksDeliveredObjectiveKey, deliveredDisks, totalTargets);
+            results.Title = LocalizationManager.Get(deliveredDisks >= totalTargets ? ResultsInvadersWinTitleKey : ResultsGuardsWinTitleKey);
         }
 
         public override string GetMatchInfoText(GameWorld world)
@@ -427,6 +427,17 @@ namespace TUA.GameModes
             }
             else if (_state == GS.Match)
             {
+                var allTargets = gameWorld.GetEntities<HackingTarget>();
+                if (allTargets.Count > 0)
+                {
+                    var deliveredDisks = allTargets.Count(t => t && t.IsDelivered);
+                    if (deliveredDisks >= allTargets.Count)
+                    {
+                        _SetState(GS.MatchOver, gameWorld);
+                        return;
+                    }
+                }
+
                 if (!_phaseTimerRunning && _phaseTimerRemainingSeconds <= 0f)
                 {
                     if (useRounds && totalRounds > 0 && _roundNumber < totalRounds)

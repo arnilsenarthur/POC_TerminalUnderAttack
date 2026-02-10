@@ -10,16 +10,61 @@ hud.match.warmup=Warmup
 hud.match.match=Match
 hud.match.round=Round {0}/{1}
 hud.match.match_over=Match Over
+hud.no_target_found=No target found
+hud.hacking_progress=Hacking progress
+hud.unknown=Unknown
+hud.spectating=Spectating
+hud.spectating_none=Spectating: None
 
 # Results
 results.title.match_over=Match Over
 results.title.invaders_win=Invaders Win
 results.title.guards_win=Guards Win
-results.objective.targets_hacked=Targets hacked: {0}/{1}
+results.objective.disks_delivered=Disks delivered: {0}/{1}
 
 # Scoreboard
 scoreboard.team.invaders=Invaders
 scoreboard.team.guards=Guards
 scoreboard.team.unassigned=Unassigned
-scoreboard.stat.targets_hacked=Targets hacked: {0}
-scoreboard.stat.targets_unhacked=Targets unhacked: {0}
+scoreboard.stat.disks_delivered=Disks delivered: {0}
+scoreboard.stat.disks_undelivered=Disks undelivered: {0}
+
+# Pause Menu
+pause.title=Pause
+pause.settings=Settings
+pause.leave_match=Leave match
+pause.close=Resume
+pause.room_code=Room code
+
+# Settings
+settings.title=Settings
+settings.general=General
+settings.gameplay=Gameplay
+settings.general.language=Language
+settings.general.audio=Audio
+settings.general.audio.volume.general=Master volume
+settings.general.audio.volume.feed=Feed volume
+settings.gameplay.camera=Camera
+settings.gameplay.camera.sensitivity_x=Sensitivity X
+settings.gameplay.camera.sensitivity_y=Sensitivity Y
+settings.gameplay.camera.inverted_x=Invert X
+settings.gameplay.camera.inverted_y=Invert Y
+settings.gameplay.test=Test
+settings.gameplay.x=X
+settings.gameplay.y=Y
+settings.gameplay.z=Z
+settings.gameplay.w=W
+
+# Items
+item.unknown=Unknown
+item.misc.data_drive=Data Disc
+item.tool.hacker=Hacking Tool
+item.weapon.assault_rifle=Assault Rifle
+item.weapon.deagle=Desert Eagle
+item.weapon.pistol=Pistol
+item.weapon.shotgun=Shotgun
+item.weapon.smg=Submachine Gun
+item.weapon.sniper_rifle=Sniper Rifle
+item.gadget.flash=Flash Grenade
+item.gadget.grenade=Explosion Grenade
+item.gadget.smoke=Smoke Grenade

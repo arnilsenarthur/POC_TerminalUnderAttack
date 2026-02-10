@@ -1,5 +1,6 @@
 using System;
 using TUA.Core;
+using TUA.Misc;
 using UnityEngine;
 
 namespace TUA.Items
@@ -10,6 +11,6 @@ namespace TUA.Items
     {
         public string targetName;
         public Color targetColor;
+        public Uuid targetUuid;
     }
 }
-

@@ -30,7 +30,7 @@ namespace TUA.Core
         {
             string itemId = !string.IsNullOrEmpty(stack?.item) ? stack.item : this.Id;
             if (string.IsNullOrEmpty(itemId))
-                return "Unknown";
+                return LocalizationManager.Get("item.unknown");
             string locKey = $"item.{itemId.ToLowerInvariant()}";
             return LocalizationManager.Get(locKey);
         }

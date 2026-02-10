@@ -22,6 +22,7 @@ namespace TUA.Entities
         #region Properties
         public float HackingProgress { get; private set; }
         public bool IsHacked { get; private set; }
+        public bool IsDelivered { get; private set; }
         public bool IsBeingHacked { get; private set; }
         #endregion
 
@@ -69,6 +70,14 @@ namespace TUA.Entities
                 throw new System.InvalidOperationException("Server_SetIsHacked can only be called on server side");
 
             _Server_SetIsHackedInternal(isHacked);
+        }
+
+        public void Server_SetIsDelivered(bool isDelivered)
+        {
+            if (!IsServerSide)
+                throw new System.InvalidOperationException("Server_SetIsDelivered can only be called on server side");
+
+            _Server_SetIsDeliveredInternal(isDelivered);
         }
 
         public void Server_SetIsBeingHacked(bool isBeingHacked)

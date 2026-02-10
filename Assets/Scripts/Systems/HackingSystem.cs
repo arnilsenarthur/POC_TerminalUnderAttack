@@ -250,7 +250,8 @@ namespace TUA.Systems
             {
                 item = dataDriveItem.Id,
                 targetName = target.unlocalizedName ?? "Target",
-                targetColor = target.color
+                targetColor = target.color,
+                targetUuid = target.EntityUuid
             };
             playerEntity.Server_SetInventory(newInventory);
         }

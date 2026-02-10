@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 302647f303bb875459177b6f5b97056c, type: 3}
   m_Name: Smoke_Gadget_Item
   m_EditorClassIdentifier: TUA.Items::TUA.Items.SmokeItem
-  id: gadget:smoke
+  id: gadget.smoke
   sprite: {fileID: 21300000, guid: 14737fc575fcc174bac8f3d5baa5c487, type: 3}
   visualPrefab: {fileID: 1297882294186269746, guid: 2ea481073c00a594dbd6f6ca418b64d6, type: 3}
   throwVelocity: 25
@@ -23,4 +23,3 @@ MonoBehaviour:
   effectSoundKey: gadget_smoke_explosion
   smokeRadius: 8
   smokeDuration: 10
-  smokeFuseTime: 0

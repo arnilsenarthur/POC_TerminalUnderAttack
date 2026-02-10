@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99438262820cb684e888f3364865ac25, type: 3}
   m_Name: Grenade_Gadget_Item
   m_EditorClassIdentifier: TUA.Items::TUA.Items.GrenadeItem
-  id: gadget:grenade
+  id: gadget.grenade
   sprite: {fileID: 21300000, guid: 0e51f72e2195cae4885c7685cb6520f0, type: 3}
   visualPrefab: {fileID: 5444457963471553400, guid: e2c55ce0aa4e15b4b8fc1288e50c7bea, type: 3}
   throwVelocity: 25
@@ -48,4 +48,3 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   explosionForce: 500
-  fuseTime: 0

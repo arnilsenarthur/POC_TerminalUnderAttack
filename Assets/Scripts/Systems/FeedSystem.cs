@@ -1,3 +1,4 @@
+using System;
 using TUA.Core;
 using TUA.Misc;
 using UnityEngine;
@@ -83,6 +84,33 @@ namespace TUA.Systems
 
         public static string GetPlayerColor(GamePlayer player)
         {
+            var world = GameWorld.Instance;
+            var teamName = player?.TeamName;
+            if (world != null && !string.IsNullOrWhiteSpace(teamName))
+            {
+                var teams = world.GetTeams();
+                if (teams != null)
+                {
+                    for (var i = 0; i < teams.Count; i++)
+                    {
+                        var team = teams[i];
+                        if (team == null || string.IsNullOrWhiteSpace(team.Name))
+                            continue;
+
+                        if (!string.Equals(team.Name, teamName, StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        if (team.Color.a > 0f)
+                            return ColorToHex(team.Color);
+                        break;
+                    }
+                }
+
+                var fallback = world.GetTeamColor(teamName);
+                if (fallback.a > 0f && fallback != Color.gray)
+                    return ColorToHex(fallback);
+            }
+
             return "#FFD700";
         }
 

@@ -254,6 +254,8 @@ namespace TUA
         {
             writer.WriteString(value.item ?? string.Empty);
             writer.WriteString(value.targetName ?? string.Empty);
+            writer.WriteInt32(value.targetUuid.high);
+            writer.WriteInt32(value.targetUuid.low);
             writer.WriteColor32(new Color32(
                 (byte)(value.targetColor.r * 255),
                 (byte)(value.targetColor.g * 255),
@@ -267,7 +269,8 @@ namespace TUA
             var dataDriveStack = new DataDriveItemStack
             {
                 item = reader.ReadStringAllocated() ?? string.Empty,
-                targetName = reader.ReadStringAllocated() ?? string.Empty
+                targetName = reader.ReadStringAllocated() ?? string.Empty,
+                targetUuid = new Uuid(reader.ReadInt32(), reader.ReadInt32())
             };
             var color32 = reader.ReadColor32();
             dataDriveStack.targetColor = new Color(

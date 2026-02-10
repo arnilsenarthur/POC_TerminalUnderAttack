@@ -7,6 +7,7 @@ namespace TUA.Entities
         #region Private Fields
         private readonly SyncVar<float> _hackingProgress = new(0f);
         private readonly SyncVar<bool> _isHacked = new(false);
+        private readonly SyncVar<bool> _isDelivered = new(false);
         private readonly SyncVar<bool> _isBeingHacked = new(false);
         #endregion
 
@@ -15,6 +16,7 @@ namespace TUA.Entities
         {
             HackingProgress = _hackingProgress.Value;
             IsHacked = _isHacked.Value;
+            IsDelivered = _isDelivered.Value;
             IsBeingHacked = _isBeingHacked.Value;
 
             _hackingProgress.OnChange += (_, next, _) =>
@@ -27,6 +29,11 @@ namespace TUA.Entities
             {
                 IsHacked = next;
                 OnIsHackedChangeEvent?.Invoke(next);
+            };
+
+            _isDelivered.OnChange += (_, next, _) =>
+            {
+                IsDelivered = next;
             };
 
             _isBeingHacked.OnChange += (_, next, _) =>
@@ -51,6 +58,14 @@ namespace TUA.Entities
                 throw new System.InvalidOperationException("Server_SetIsHacked can only be called on server side");
 
             _isHacked.Value = isHacked;
+        }
+
+        private void _Server_SetIsDeliveredInternal(bool isDelivered)
+        {
+            if (!IsServerSide)
+                throw new System.InvalidOperationException("Server_SetIsDelivered can only be called on server side");
+
+            _isDelivered.Value = isDelivered;
         }
 
         private void _Server_SetIsBeingHackedInternal(bool isBeingHacked)

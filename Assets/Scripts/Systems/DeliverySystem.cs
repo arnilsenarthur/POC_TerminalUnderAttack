@@ -121,7 +121,20 @@ namespace TUA.Systems
             if (dataDriveSlot < 0)
                 return;
 
-            if (FeedSystem.Instance != null && inventoryHolder is PlayerEntity playerEntity)
+            var announceDelivery = true;
+            if (GameWorld.Instance != null && dataDriveItem!.targetUuid.IsValid)
+            {
+                var target = GameWorld.Instance.GetEntityByUuid<HackingTarget>(dataDriveItem.targetUuid);
+                if (target != null)
+                {
+                    if (target.IsDelivered)
+                        announceDelivery = false;
+                    else
+                        target.Server_SetIsDelivered(true);
+                }
+            }
+
+            if (announceDelivery && FeedSystem.Instance != null && inventoryHolder is PlayerEntity playerEntity)
             {
                 var color = FeedSystem.GetPlayerColor(playerEntity.GamePlayer);
                 var diskColor = FeedSystem.ColorToHex(dataDriveItem!.targetColor);
