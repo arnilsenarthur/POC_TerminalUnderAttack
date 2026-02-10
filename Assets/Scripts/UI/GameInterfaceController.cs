@@ -8,6 +8,7 @@ using TUA.I18n;
 using TUA.Items;
 using TUA.Misc;
 using TUA.Systems;
+using TUA.Windowing;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
@@ -84,6 +85,17 @@ namespace TUA.UI
         private Button _spectatorPrevButton;
         private Button _spectatorNextButton;
         private Label _spectatorNameLabel;
+        private VisualElement _scoreboardOverlay;
+        private VisualElement _scoreboardContent;
+        private bool _scoreboardVisible;
+        private float _nextScoreboardRefreshTime;
+        private readonly List<ScoreboardSection> _scoreboardSections = new();
+        private VisualElement _resultsOverlay;
+        private VisualElement _resultsContent;
+        private Label _resultsTitle;
+        private bool _resultsVisible;
+        private float _nextResultsRefreshTime;
+        private readonly List<ScoreboardSection> _resultsSections = new();
         
         [Header("Minimap")]
         [SerializeField] private float minimapImageScale = 0.35f;
@@ -165,6 +177,8 @@ namespace TUA.UI
             _UpdateReloadProgress();
             _UpdateSpectatorMenu();
             _UpdateMatchInfo();
+            _UpdateMatchResults();
+            _UpdateScoreboard();
             _UpdateMinimap();
         }
         #endregion
@@ -295,6 +309,17 @@ namespace TUA.UI
                 
                 _spectatorMenu.style.display = DisplayStyle.None;
             }
+
+            _scoreboardOverlay = _root.Q<VisualElement>("ScoreboardOverlay");
+            _scoreboardContent = _root.Q<VisualElement>("ScoreboardContent");
+            if (_scoreboardOverlay != null)
+                _scoreboardOverlay.style.display = DisplayStyle.None;
+
+            _resultsOverlay = _root.Q<VisualElement>("ResultsOverlay");
+            _resultsContent = _root.Q<VisualElement>("ResultsContent");
+            _resultsTitle = _root.Q<Label>("ResultsTitle");
+            if (_resultsOverlay != null)
+                _resultsOverlay.style.display = DisplayStyle.None;
         }
 
         private void _OnMinimapGeometryChanged(GeometryChangedEvent evt)
@@ -380,7 +405,10 @@ namespace TUA.UI
                 return;
 
             if (_matchInfoMessageText != null)
-                _matchInfoMessageText.text = gameWorld.MatchInfoMessage ?? string.Empty;
+            {
+                var mode = gameWorld.GameMode;
+                _matchInfoMessageText.text = mode != null ? mode.GetMatchInfoText(gameWorld) : (gameWorld.MatchInfoKey ?? string.Empty);
+            }
 
             if (_matchInfoTimerText != null)
             {
@@ -393,6 +421,105 @@ namespace TUA.UI
                     _matchInfoTimerText.style.display = DisplayStyle.Flex;
                     _matchInfoTimerText.text = _FormatTime(gameWorld.MatchInfoTimeSeconds);
                 }
+            }
+        }
+
+        private void _UpdateMatchResults()
+        {
+            if (_resultsOverlay == null || _resultsContent == null)
+                return;
+
+            var world = GameWorld.Instance;
+            if (!world)
+                return;
+
+            var mode = world.GameMode;
+            var matchOver = mode != null && mode.IsMatchOver(world);
+            if (matchOver != _resultsVisible)
+            {
+                _resultsVisible = matchOver;
+                _resultsOverlay.style.display = matchOver ? DisplayStyle.Flex : DisplayStyle.None;
+                _nextResultsRefreshTime = 0f;
+            }
+
+            if (!matchOver)
+                return;
+
+            if (Time.unscaledTime < _nextResultsRefreshTime)
+                return;
+            _nextResultsRefreshTime = Time.unscaledTime + 0.5f;
+
+            var results = new MatchResultsData();
+            if (mode != null)
+                mode.BuildMatchResults(world, results);
+            else
+                results.Title = string.Empty;
+
+            if (_resultsTitle != null)
+                _resultsTitle.text = results.Title ?? string.Empty;
+
+            _resultsSections.Clear();
+            if (mode != null)
+                mode.BuildScoreboard(world, _resultsSections);
+            else
+                _BuildFallbackScoreboard(world, _resultsSections);
+
+            _resultsContent.Clear();
+
+            if (!string.IsNullOrWhiteSpace(results.ObjectiveLine))
+            {
+                var objectiveRow = new VisualElement();
+                objectiveRow.AddToClassList("results-objective-row");
+
+                var objectiveLabel = new Label(results.ObjectiveLine);
+                objectiveLabel.AddToClassList("results-objective-text");
+
+                objectiveRow.Add(objectiveLabel);
+                _resultsContent.Add(objectiveRow);
+            }
+
+            foreach (var section in _resultsSections)
+            {
+                if (section == null)
+                    continue;
+
+                var sectionRoot = new VisualElement();
+                sectionRoot.AddToClassList("scoreboard-section");
+
+                var header = new VisualElement();
+                header.AddToClassList("scoreboard-section-header");
+
+                var teamNameLabel = new Label(string.IsNullOrWhiteSpace(section.Header) ? (section.TeamName ?? string.Empty) : section.Header);
+                teamNameLabel.AddToClassList("scoreboard-team-name");
+                teamNameLabel.style.color = new StyleColor(section.TeamColor);
+
+                var statLabel = new Label(section.StatLine ?? string.Empty);
+                statLabel.AddToClassList("scoreboard-team-stat");
+
+                header.Add(teamNameLabel);
+                header.Add(statLabel);
+                sectionRoot.Add(header);
+
+                if (section.Players != null)
+                {
+                    foreach (var player in section.Players.OrderByDescending(p => p.Kills).ThenBy(p => p.PlayerName))
+                    {
+                        var row = new VisualElement();
+                        row.AddToClassList("scoreboard-player-row");
+
+                        var nameLabel = new Label(player.PlayerName ?? string.Empty);
+                        nameLabel.AddToClassList("scoreboard-player-name");
+
+                        var killsLabel = new Label(player.Kills.ToString());
+                        killsLabel.AddToClassList("scoreboard-player-kills");
+
+                        row.Add(nameLabel);
+                        row.Add(killsLabel);
+                        sectionRoot.Add(row);
+                    }
+                }
+
+                _resultsContent.Add(sectionRoot);
             }
         }
 
@@ -410,6 +537,122 @@ namespace TUA.UI
             var m = totalMinutes % 60;
             var h = totalMinutes / 60;
             return $"{h}:{m:00}:{s:00}";
+        }
+
+        private void _UpdateScoreboard()
+        {
+            if (_scoreboardOverlay == null || _scoreboardContent == null)
+                return;
+
+            var show = Input.GetKey(KeyCode.Tab) && !WindowManager.HasOpenWindow();
+            if (show != _scoreboardVisible)
+            {
+                _scoreboardVisible = show;
+                _scoreboardOverlay.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+                _nextScoreboardRefreshTime = 0f;
+            }
+
+            if (!show)
+                return;
+
+            if (Time.unscaledTime < _nextScoreboardRefreshTime)
+                return;
+            _nextScoreboardRefreshTime = Time.unscaledTime + 0.25f;
+
+            var world = GameWorld.Instance;
+            if (!world)
+                return;
+
+            _scoreboardSections.Clear();
+            var mode = world.GameMode;
+            if (mode != null)
+                mode.BuildScoreboard(world, _scoreboardSections);
+            else
+                _BuildFallbackScoreboard(world, _scoreboardSections);
+
+            _scoreboardContent.Clear();
+            foreach (var section in _scoreboardSections)
+            {
+                if (section == null)
+                    continue;
+
+                var sectionRoot = new VisualElement();
+                sectionRoot.AddToClassList("scoreboard-section");
+
+                var header = new VisualElement();
+                header.AddToClassList("scoreboard-section-header");
+
+                var teamNameLabel = new Label(string.IsNullOrWhiteSpace(section.Header) ? (section.TeamName ?? string.Empty) : section.Header);
+                teamNameLabel.AddToClassList("scoreboard-team-name");
+                teamNameLabel.style.color = new StyleColor(section.TeamColor);
+
+                var statLabel = new Label(section.StatLine ?? string.Empty);
+                statLabel.AddToClassList("scoreboard-team-stat");
+
+                header.Add(teamNameLabel);
+                header.Add(statLabel);
+                sectionRoot.Add(header);
+
+                if (section.Players != null)
+                {
+                    foreach (var player in section.Players)
+                    {
+                        var row = new VisualElement();
+                        row.AddToClassList("scoreboard-player-row");
+
+                        var nameLabel = new Label(player.PlayerName ?? string.Empty);
+                        nameLabel.AddToClassList("scoreboard-player-name");
+
+                        var killsLabel = new Label(player.Kills.ToString());
+                        killsLabel.AddToClassList("scoreboard-player-kills");
+
+                        row.Add(nameLabel);
+                        row.Add(killsLabel);
+                        sectionRoot.Add(row);
+                    }
+                }
+
+                _scoreboardContent.Add(sectionRoot);
+            }
+        }
+
+        private static void _BuildFallbackScoreboard(GameWorld gameWorld, List<ScoreboardSection> sections)
+        {
+            if (gameWorld == null || sections == null)
+                return;
+
+            sections.Clear();
+
+            var teams = gameWorld.GetTeams() ?? new List<Team>();
+            foreach (var team in teams)
+            {
+                if (team == null || string.IsNullOrWhiteSpace(team.Name))
+                    continue;
+
+                var section = new ScoreboardSection
+                {
+                    TeamName = team.Name,
+                    Header = team.Name,
+                    TeamColor = team.Color
+                };
+
+                var players = gameWorld.GetPlayersInTeam(team.Name)
+                    .Where(p => p != null && p.IsOnline && !p.IsSpectator)
+                    .OrderBy(p => p.Name)
+                    .ToList();
+
+                foreach (var player in players)
+                {
+                    section.Players.Add(new ScoreboardPlayerEntry
+                    {
+                        PlayerUuid = player.Uuid,
+                        PlayerName = player.Name ?? string.Empty,
+                        Kills = 0
+                    });
+                }
+
+                sections.Add(section);
+            }
         }
         
         private void _UpdateHackingTargets()

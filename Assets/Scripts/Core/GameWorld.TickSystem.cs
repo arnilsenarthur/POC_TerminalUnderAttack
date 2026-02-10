@@ -11,7 +11,9 @@ namespace TUA.Core
         public uint NetworkTick { get; private set; }
         public uint LocalTick { get; private set; }
         public bool IsGameModeRunning { get; private set; }
-        public string MatchInfoMessage { get; private set; }
+        public string MatchInfoKey { get; private set; }
+        public int MatchInfoArg0 { get; private set; }
+        public int MatchInfoArg1 { get; private set; }
         public bool MatchInfoShowTime { get; private set; }
         public float MatchInfoTimeSeconds { get; private set; }
         #endregion
@@ -35,18 +37,18 @@ namespace TUA.Core
             Server_SetGameModeRunningInternal(running);
         }
 
-        public void Server_SetMatchInfo(string message, bool showTime, float timeSeconds)
+        public void Server_SetMatchInfo(string key, int arg0, int arg1, bool showTime, float timeSeconds)
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_SetMatchInfo can only be called on server side");
-            Server_SetMatchInfoInternal(message, showTime, timeSeconds);
+            Server_SetMatchInfoInternal(key, arg0, arg1, showTime, timeSeconds);
         }
 
         public void Server_ClearMatchInfo()
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_ClearMatchInfo can only be called on server side");
-            Server_SetMatchInfoInternal(string.Empty, false, 0f);
+            Server_SetMatchInfoInternal(string.Empty, 0, 0, false, 0f);
         }
         #endregion
     }

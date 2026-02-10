@@ -71,6 +71,8 @@ namespace TUA.Core
             base.OnStartClient();
             if (!gameObject.activeSelf)
                 gameObject.SetActive(true);
+            if (!_gameMode)
+                _gameMode = GetConfiguredGameMode();
             if (!IsServerSide)
                 InitializeTickSystem();
             _allPlayers.OnChange += _OnPlayersChanged;

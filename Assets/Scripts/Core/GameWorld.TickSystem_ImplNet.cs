@@ -12,7 +12,9 @@ namespace TUA.Core
         private TimeManager _timeManager;
         private readonly SyncVar<int> _tickRate = new(64);
         private readonly SyncVar<bool> _gameModeRunning = new();
-        private readonly SyncVar<string> _matchInfoMessage = new();
+        private readonly SyncVar<string> _matchInfoKey = new();
+        private readonly SyncVar<int> _matchInfoArg0 = new();
+        private readonly SyncVar<int> _matchInfoArg1 = new();
         private readonly SyncVar<bool> _matchInfoShowTime = new();
         private readonly SyncVar<float> _matchInfoTimeSeconds = new();
         #endregion
@@ -22,7 +24,9 @@ namespace TUA.Core
         {
             TickRate = _tickRate.Value;
             IsGameModeRunning = _gameModeRunning.Value;
-            MatchInfoMessage = _matchInfoMessage.Value;
+            MatchInfoKey = _matchInfoKey.Value;
+            MatchInfoArg0 = _matchInfoArg0.Value;
+            MatchInfoArg1 = _matchInfoArg1.Value;
             MatchInfoShowTime = _matchInfoShowTime.Value;
             MatchInfoTimeSeconds = _matchInfoTimeSeconds.Value;
             _tickRate.OnChange += (_, next, asServer) =>
@@ -35,9 +39,17 @@ namespace TUA.Core
             {
                 IsGameModeRunning = next;
             };
-            _matchInfoMessage.OnChange += (_, next, _) =>
+            _matchInfoKey.OnChange += (_, next, _) =>
             {
-                MatchInfoMessage = next;
+                MatchInfoKey = next;
+            };
+            _matchInfoArg0.OnChange += (_, next, _) =>
+            {
+                MatchInfoArg0 = next;
+            };
+            _matchInfoArg1.OnChange += (_, next, _) =>
+            {
+                MatchInfoArg1 = next;
             };
             _matchInfoShowTime.OnChange += (_, next, _) =>
             {
@@ -92,8 +104,12 @@ namespace TUA.Core
                 };
                 _gameModeRunning.Value = false;
                 _gameModeRunning.UpdateSendRate(0f);
-                _matchInfoMessage.Value = string.Empty;
-                _matchInfoMessage.UpdateSendRate(0f);
+                _matchInfoKey.Value = string.Empty;
+                _matchInfoKey.UpdateSendRate(0f);
+                _matchInfoArg0.Value = 0;
+                _matchInfoArg0.UpdateSendRate(0f);
+                _matchInfoArg1.Value = 0;
+                _matchInfoArg1.UpdateSendRate(0f);
                 _matchInfoShowTime.Value = false;
                 _matchInfoShowTime.UpdateSendRate(0f);
                 _matchInfoTimeSeconds.Value = 0f;
@@ -140,13 +156,17 @@ namespace TUA.Core
             _gameModeRunning.UpdateSendRate(0f);
         }
 
-        private void Server_SetMatchInfoInternal(string message, bool showTime, float timeSeconds)
+        private void Server_SetMatchInfoInternal(string key, int arg0, int arg1, bool showTime, float timeSeconds)
         {
             if (!IsServerSide)
                 throw new InvalidOperationException("Server_SetMatchInfoInternal can only be called on server side");
 
-            _matchInfoMessage.Value = message ?? string.Empty;
-            _matchInfoMessage.UpdateSendRate(0f);
+            _matchInfoKey.Value = key ?? string.Empty;
+            _matchInfoKey.UpdateSendRate(0f);
+            _matchInfoArg0.Value = arg0;
+            _matchInfoArg0.UpdateSendRate(0f);
+            _matchInfoArg1.Value = arg1;
+            _matchInfoArg1.UpdateSendRate(0f);
             _matchInfoShowTime.Value = showTime;
             _matchInfoShowTime.UpdateSendRate(0f);
             _matchInfoTimeSeconds.Value = Mathf.Max(0f, timeSeconds);

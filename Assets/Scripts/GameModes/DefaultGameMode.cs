@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using TUA.Core;
 using TUA.Entities;
+using TUA.I18n;
 using TUA.Misc;
+using TUA.Systems;
 using UnityEngine;
 
 namespace TUA.GameModes
@@ -13,12 +15,16 @@ namespace TUA.GameModes
     [Serializable]
     public struct DefaultPlayerData : IPlayerData
     {
+        public int KillCount;
+        
         public void Serialize(INetWriter writer)
         {
+            writer.WriteInt32(KillCount);
         }
 
         public IPlayerData Deserialize(INetReader reader)
         {
+            KillCount = reader.ReadInt32();
             return this;
         }
     }
@@ -29,6 +35,20 @@ namespace TUA.GameModes
 
     public class DefaultGameMode : GameMode<DefaultPlayerData, DefaultGameSettings>
     {
+        private const string MatchInfoWarmupKey = "hud.match.warmup";
+        private const string MatchInfoMatchKey = "hud.match.match";
+        private const string MatchInfoRoundKey = "hud.match.round";
+        private const string MatchInfoMatchOverKey = "hud.match.match_over";
+        private const string ResultsMatchOverTitleKey = "results.title.match_over";
+        private const string ResultsInvadersWinTitleKey = "results.title.invaders_win";
+        private const string ResultsGuardsWinTitleKey = "results.title.guards_win";
+        private const string ResultsTargetsHackedObjectiveKey = "results.objective.targets_hacked";
+        private const string ScoreboardInvadersHeaderKey = "scoreboard.team.invaders";
+        private const string ScoreboardGuardsHeaderKey = "scoreboard.team.guards";
+        private const string ScoreboardUnassignedHeaderKey = "scoreboard.team.unassigned";
+        private const string ScoreboardTargetsHackedKey = "scoreboard.stat.targets_hacked";
+        private const string ScoreboardTargetsUnhackedKey = "scoreboard.stat.targets_unhacked";
+
         public enum GS
         {
             Warmup = 0,
@@ -63,8 +83,11 @@ namespace TUA.GameModes
         private float _phaseTimerDurationSeconds;
         private float _phaseTimerRemainingSeconds;
         private int _lastSentMatchTimeSeconds = int.MinValue;
-        private string _lastSentMatchMessage;
+        private string _lastSentMatchKey;
+        private int _lastSentMatchArg0;
+        private int _lastSentMatchArg1;
         private bool _lastSentShowTime;
+        private GameWorld _activeWorld;
         #endregion
 
         #region Public Methods
@@ -73,6 +96,10 @@ namespace TUA.GameModes
             Debug.Log("DefaultGameMode OnWorldStart");
             if (gameWorld && gameWorld.IsServerSide)
             {
+                _activeWorld = gameWorld;
+                FeedSystem.OnKillEvent -= _OnKillEvent;
+                FeedSystem.OnKillEvent += _OnKillEvent;
+
                 _roundNumber = 1;
                 if (warmupSeconds > 0f)
                     _SetState(GS.Warmup, gameWorld);
@@ -86,6 +113,8 @@ namespace TUA.GameModes
         {
             if (gameWorld && gameWorld.IsServerSide)
             {
+                FeedSystem.OnKillEvent -= _OnKillEvent;
+                _activeWorld = null;
                 gameWorld.Server_ClearMatchInfo();
             }
         }
@@ -149,6 +178,158 @@ namespace TUA.GameModes
                 new("guards", new Color(0f, 120f / 255f, 1f)),
                 new("invaders", new Color(220f / 255f, 50f / 255f, 50f / 255f))
             };
+        }
+
+        public override void BuildScoreboard(GameWorld gameWorld, List<ScoreboardSection> sections)
+        {
+            if (gameWorld == null || sections == null)
+                return;
+
+            sections.Clear();
+
+            var teams = gameWorld.GetTeams() ?? new List<Team>();
+            var allTargets = gameWorld.GetEntities<HackingTarget>();
+            var hackedTargets = allTargets.Count(t => t && t.IsHacked);
+
+            foreach (var team in teams)
+            {
+                if (team == null || string.IsNullOrWhiteSpace(team.Name))
+                    continue;
+
+                var section = new ScoreboardSection
+                {
+                    TeamName = team.Name,
+                    Header = team.Name,
+                    TeamColor = team.Color
+                };
+
+                if (string.Equals(team.Name, "invaders", StringComparison.OrdinalIgnoreCase))
+                {
+                    section.Header = LocalizationManager.Get(ScoreboardInvadersHeaderKey);
+                    section.StatLine = LocalizationManager.Get(ScoreboardTargetsHackedKey, hackedTargets);
+                }
+                else if (string.Equals(team.Name, "guards", StringComparison.OrdinalIgnoreCase))
+                {
+                    section.Header = LocalizationManager.Get(ScoreboardGuardsHeaderKey);
+                    section.StatLine = LocalizationManager.Get(ScoreboardTargetsUnhackedKey, Mathf.Max(0, allTargets.Count - hackedTargets));
+                }
+
+                var players = gameWorld.GetPlayersInTeam(team.Name)
+                    .Where(p => p != null && p.IsOnline && !p.IsSpectator)
+                    .OrderBy(p => p.Name)
+                    .ToList();
+
+                foreach (var player in players)
+                {
+                    var kills = 0;
+                    if (gameWorld.IsServerSide)
+                    {
+                        if (gameWorld.Server_GetPlayerData(player) is DefaultPlayerData serverData)
+                            kills = serverData.KillCount;
+                    }
+                    else
+                    {
+                        if (gameWorld.Client_GetPlayerData(player) is DefaultPlayerData clientData)
+                            kills = clientData.KillCount;
+                    }
+
+                    section.Players.Add(new ScoreboardPlayerEntry
+                    {
+                        PlayerUuid = player.Uuid,
+                        PlayerName = player.Name ?? string.Empty,
+                        Kills = kills
+                    });
+                }
+
+                sections.Add(section);
+            }
+
+            var teamNames = new HashSet<string>(teams.Where(t => t != null && !string.IsNullOrWhiteSpace(t.Name)).Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
+            var unassignedPlayers = (gameWorld.AllPlayers ?? new List<GamePlayer>())
+                .Where(p => p != null && p.IsOnline && !p.IsSpectator && (string.IsNullOrWhiteSpace(p.TeamName) || !teamNames.Contains(p.TeamName)))
+                .OrderBy(p => p.Name)
+                .ToList();
+            if (unassignedPlayers.Count > 0)
+            {
+                var unassigned = new ScoreboardSection
+                {
+                    TeamName = "unassigned",
+                    Header = LocalizationManager.Get(ScoreboardUnassignedHeaderKey),
+                    TeamColor = Color.white
+                };
+
+                foreach (var player in unassignedPlayers)
+                {
+                    var kills = 0;
+                    if (gameWorld.IsServerSide)
+                    {
+                        if (gameWorld.Server_GetPlayerData(player) is DefaultPlayerData serverData)
+                            kills = serverData.KillCount;
+                    }
+                    else
+                    {
+                        if (gameWorld.Client_GetPlayerData(player) is DefaultPlayerData clientData)
+                            kills = clientData.KillCount;
+                    }
+
+                    unassigned.Players.Add(new ScoreboardPlayerEntry
+                    {
+                        PlayerUuid = player.Uuid,
+                        PlayerName = player.Name ?? string.Empty,
+                        Kills = kills
+                    });
+                }
+
+                sections.Add(unassigned);
+            }
+        }
+
+        public override void BuildMatchResults(GameWorld gameWorld, MatchResultsData results)
+        {
+            if (results == null)
+                return;
+
+            results.Title = LocalizationManager.Get(ResultsMatchOverTitleKey);
+            results.ObjectiveLine = null;
+
+            if (gameWorld == null)
+                return;
+
+            var allTargets = gameWorld.GetEntities<HackingTarget>();
+            var totalTargets = allTargets.Count;
+            if (totalTargets <= 0)
+                return;
+
+            var hackedTargets = allTargets.Count(t => t && t.IsHacked);
+            results.ObjectiveLine = LocalizationManager.Get(ResultsTargetsHackedObjectiveKey, hackedTargets, totalTargets);
+            results.Title = LocalizationManager.Get(hackedTargets >= totalTargets ? ResultsInvadersWinTitleKey : ResultsGuardsWinTitleKey);
+        }
+
+        public override string GetMatchInfoText(GameWorld world)
+        {
+            if (world == null || string.IsNullOrWhiteSpace(world.MatchInfoKey))
+                return string.Empty;
+
+            if (string.Equals(world.MatchInfoKey, MatchInfoRoundKey, StringComparison.Ordinal))
+                return LocalizationManager.Get(MatchInfoRoundKey, world.MatchInfoArg0, world.MatchInfoArg1);
+
+            return LocalizationManager.Get(world.MatchInfoKey);
+        }
+
+        public override bool IsMatchOver(GameWorld world)
+        {
+            if (world == null)
+                return false;
+
+            if (world.IsServerSide)
+                return _state == GS.MatchOver;
+
+            return string.Equals(world.MatchInfoKey, MatchInfoMatchOverKey, StringComparison.Ordinal);
+        }
+
+        public override DefaultPlayerData GetPlayerDataSnapshot(GamePlayer player, DefaultPlayerData fullData, GamePlayer requestingPlayer, GameWorld gameWorld)
+        {
+            return fullData;
         }
 
         public override Uuid OnGetNextSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
@@ -262,14 +443,33 @@ namespace TUA.GameModes
 
             _UpdateMatchInfo(gameWorld);
         }
+
+        private void _OnKillEvent(GamePlayer killer, GamePlayer victim)
+        {
+            if (_activeWorld == null || !_activeWorld.IsServerSide)
+                return;
+            
+            if (killer == null)
+                return;
+            
+            if (_activeWorld.Server_GetPlayerData(killer) is DefaultPlayerData data)
+                data.KillCount = Mathf.Max(0, data.KillCount) + 1;
+            else
+                data = new DefaultPlayerData { KillCount = 1 };
+
+            _activeWorld.Server_SetPlayerData(killer, data);
+        }
         #endregion
 
         #region Private Methods
         private void _SetState(GS state, GameWorld gameWorld)
         {
+            var previousState = _state;
             _state = state;
             _lastSentMatchTimeSeconds = int.MinValue;
-            _lastSentMatchMessage = null;
+            _lastSentMatchKey = null;
+            _lastSentMatchArg0 = 0;
+            _lastSentMatchArg1 = 0;
             _lastSentShowTime = false;
 
             if (_state == GS.Warmup)
@@ -299,6 +499,9 @@ namespace TUA.GameModes
             }
 
             _UpdateMatchInfo(gameWorld);
+
+            if (previousState != GS.MatchOver && _state == GS.MatchOver)
+                _KillAllPlayers(gameWorld);
         }
 
         private void _StartRoundTimerAndMatchInfo(GameWorld gameWorld)
@@ -312,7 +515,7 @@ namespace TUA.GameModes
 
         private void _UpdateMatchInfo(GameWorld gameWorld)
         {
-            var message = _GetMatchMessage();
+            _GetMatchInfo(out var key, out var arg0, out var arg1);
             var showTime = _ShouldShowTime();
             var timeSeconds = 0;
             if (showTime)
@@ -323,28 +526,46 @@ namespace TUA.GameModes
                     : Mathf.CeilToInt(_phaseTimerDurationSeconds);
             }
 
-            if (message == _lastSentMatchMessage && showTime == _lastSentShowTime && timeSeconds == _lastSentMatchTimeSeconds)
+            if (key == _lastSentMatchKey && arg0 == _lastSentMatchArg0 && arg1 == _lastSentMatchArg1 && showTime == _lastSentShowTime && timeSeconds == _lastSentMatchTimeSeconds)
                 return;
 
-            _lastSentMatchMessage = message;
+            _lastSentMatchKey = key;
+            _lastSentMatchArg0 = arg0;
+            _lastSentMatchArg1 = arg1;
             _lastSentShowTime = showTime;
             _lastSentMatchTimeSeconds = timeSeconds;
-            gameWorld.Server_SetMatchInfo(message, showTime, timeSeconds);
+            gameWorld.Server_SetMatchInfo(key, arg0, arg1, showTime, timeSeconds);
         }
 
-        private string _GetMatchMessage()
+        private void _GetMatchInfo(out string key, out int arg0, out int arg1)
         {
+            arg0 = 0;
+            arg1 = 0;
+
             if (_state == GS.Warmup)
-                return "WARMUP";
+            {
+                key = MatchInfoWarmupKey;
+                return;
+            }
             if (_state == GS.Match)
             {
                 if (useRounds && totalRounds > 0)
-                    return $"ROUND {_roundNumber}/{totalRounds}";
-                return "MATCH";
+                {
+                    key = MatchInfoRoundKey;
+                    arg0 = _roundNumber;
+                    arg1 = totalRounds;
+                    return;
+                }
+                key = MatchInfoMatchKey;
+                return;
             }
             if (_state == GS.MatchOver)
-                return "MATCH OVER";
-            return string.Empty;
+            {
+                key = MatchInfoMatchOverKey;
+                return;
+            }
+
+            key = string.Empty;
         }
 
         private bool _ShouldShowTime()
@@ -408,8 +629,21 @@ namespace TUA.GameModes
                 }
 
                 gameWorld.Server_DespawnObject(pe.gameObject);
-                StartCoroutine(RespawnPlayerAfterDelay(player, gameWorld, 3f));
+                if (_state != GS.MatchOver)
+                    StartCoroutine(RespawnPlayerAfterDelay(player, gameWorld, 3f));
             };
+        }
+
+        private static void _KillAllPlayers(GameWorld gameWorld)
+        {
+            if (!gameWorld || !gameWorld.IsServerSide)
+                return;
+
+            var players = gameWorld.GetEntities<PlayerEntity>();
+            foreach (var player in players)
+            {
+                gameWorld.Server_DespawnObject(player.gameObject);
+            }
         }
 
         private Transform ResolveSpawnTransform(GamePlayer player)

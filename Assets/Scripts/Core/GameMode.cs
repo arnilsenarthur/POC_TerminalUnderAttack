@@ -10,6 +10,28 @@ namespace TUA.Core
         void Serialize(INetWriter writer);
         IPlayerData Deserialize(INetReader reader);
     }
+
+    public struct ScoreboardPlayerEntry
+    {
+        public Uuid PlayerUuid;
+        public string PlayerName;
+        public int Kills;
+    }
+    
+    public class ScoreboardSection
+    {
+        public string TeamName;
+        public string Header;
+        public string StatLine;
+        public Color TeamColor;
+        public List<ScoreboardPlayerEntry> Players = new();
+    }
+
+    public class MatchResultsData
+    {
+        public string Title;
+        public string ObjectiveLine;
+    }
     
     public interface IGameSettings
     {
@@ -30,6 +52,26 @@ namespace TUA.Core
 
         #region Public Methods
         public abstract IPlayerData GetPlayerDataSnapshot(GamePlayer player, IPlayerData fullData, GamePlayer requestingPlayer, GameWorld gameWorld);
+        
+        public virtual void BuildScoreboard(GameWorld gameWorld, List<ScoreboardSection> sections)
+        {
+        }
+
+        public virtual void BuildMatchResults(GameWorld gameWorld, MatchResultsData results)
+        {
+        }
+        
+        public virtual string GetMatchInfoText(GameWorld world)
+        {
+            if (world == null)
+                return string.Empty;
+            return world.MatchInfoKey ?? string.Empty;
+        }
+
+        public virtual bool IsMatchOver(GameWorld world)
+        {
+            return false;
+        }
 
         public virtual Uuid OnGetNextSpectateTarget(GamePlayer spectator, GameWorld gameWorld)
         {

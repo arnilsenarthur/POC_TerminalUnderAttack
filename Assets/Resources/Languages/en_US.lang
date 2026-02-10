@@ -4,3 +4,22 @@ name=English
 feed.killed={0} killed {1}
 feed.hacked={0} hacked {1}
 feed.delivered_disk={0} delivered {1} disk
+
+# HUD / Match
+hud.match.warmup=Warmup
+hud.match.match=Match
+hud.match.round=Round {0}/{1}
+hud.match.match_over=Match Over
+
+# Results
+results.title.match_over=Match Over
+results.title.invaders_win=Invaders Win
+results.title.guards_win=Guards Win
+results.objective.targets_hacked=Targets hacked: {0}/{1}
+
+# Scoreboard
+scoreboard.team.invaders=Invaders
+scoreboard.team.guards=Guards
+scoreboard.team.unassigned=Unassigned
+scoreboard.stat.targets_hacked=Targets hacked: {0}
+scoreboard.stat.targets_unhacked=Targets unhacked: {0}

@@ -1,6 +1,7 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:Template name="InventorySlot" src="project://database/Assets/FINAL/Interface/Widgets/InventorySlot.uxml?fileID=9197481963319205126&amp;guid=aea6167659e2baf41bc2980c74770e6b&amp;type=3#InventorySlot"/>
     <Style src="project://database/Assets/FINAL/Interface/TUAStyles.uss?fileID=7433441132597879392&amp;guid=b0d8e5f3a4b7c3d1e2f9a1b6c7d8e9f0&amp;type=3#TUAStyles"/>
+    <Style src="project://database/Assets/Interface/IngameHUD.uss?fileID=7433441132597879392&amp;guid=86cb5cd8cefc86f4599b17d3988fd12b&amp;type=3#IngameHUD"/>
     <ui:VisualElement name="HUDContainer" class="hud-root tua-root">
         <ui:VisualElement name="TopRow" class="hud-row top-row">
             <ui:VisualElement name="MinimapArea" class="minimap-container">
@@ -92,6 +93,24 @@
             <ui:Button name="SpectatorPrev" text="‹" class="tua-button tua-button--icon" />
             <ui:Label name="SpectatorName" text="SPECTATING: PLAYER" class="spectator-name"/>
             <ui:Button name="SpectatorNext" text="›" class="tua-button tua-button--icon" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="ScoreboardOverlay" class="scoreboard-overlay" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: none;" picking-mode="Ignore">
+            <ui:VisualElement name="ScoreboardPanel" class="scoreboard-panel tua-panel--strong">
+                <ui:Label name="ScoreboardTitle" text="SCOREBOARD" class="scoreboard-title" />
+                <ui:ScrollView name="ScoreboardScroll" class="scoreboard-scroll" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto">
+                    <ui:VisualElement name="ScoreboardContent" class="scoreboard-content" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="ResultsOverlay" class="results-overlay" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: none;" picking-mode="Ignore">
+            <ui:VisualElement name="ResultsPanel" class="results-panel tua-panel--strong">
+                <ui:Label name="ResultsTitle" text="MATCH OVER" class="results-title" />
+                <ui:ScrollView name="ResultsScroll" class="results-scroll" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto">
+                    <ui:VisualElement name="ResultsContent" class="results-content" />
+                </ui:ScrollView>
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:VisualElement name="DamageFlashOverlay" class="hud-overlay hud-overlay--damage" />

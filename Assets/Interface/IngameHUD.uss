@@ -369,3 +369,128 @@
     background-color: rgba(0, 0, 0, 0.15);
     border-radius: 11px; /* Makes it circular (half of width/height) */
 }
+
+.scoreboard-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.scoreboard-panel {
+    width: 520px;
+    max-height: 70%;
+    min-height: 200px;
+    padding: 14px;
+}
+
+.scoreboard-title {
+    font-size: 18px;
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 10px;
+}
+
+.scoreboard-scroll {
+    flex-grow: 1;
+    min-height: 0px;
+}
+
+.scoreboard-content {
+    flex-direction: column;
+}
+
+.scoreboard-section {
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+
+.scoreboard-section-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.scoreboard-team-name {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.95);
+    -unity-font-style: bold;
+}
+
+.scoreboard-team-stat {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.scoreboard-player-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.scoreboard-player-name {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.scoreboard-player-kills {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    -unity-text-align: middle-right;
+}
+
+.results-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 110;
+    justify-content: center;
+    align-items: center;
+}
+
+.results-panel {
+    width: 640px;
+    max-height: 75%;
+    min-height: 260px;
+    padding: 16px;
+}
+
+.results-title {
+    font-size: 22px;
+    color: rgb(255, 255, 255);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 10px;
+}
+
+.results-scroll {
+    flex-grow: 1;
+    min-height: 0px;
+}
+
+.results-content {
+    flex-direction: column;
+}
+
+.results-objective-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.results-objective-text {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+    -unity-font-style: bold;
+}
