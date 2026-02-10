@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TUA.Core;
+using TUA.Core.Interfaces;
 using TUA.Entities;
 using TUA.I18n;
+using TUA.Items;
 using TUA.Misc;
 using TUA.Systems;
 using UnityEngine;
@@ -72,6 +74,9 @@ namespace TUA.GameModes
         public int totalRounds = 5;
         public float warmupSeconds = 5f;
         public float roundDurationSeconds = 180f;
+
+        [Header("Out of Bounds")]
+        public float killBelowY = -50f;
         #endregion
 
         #region Private Fields
@@ -413,6 +418,29 @@ namespace TUA.GameModes
             if (!gameWorld || !gameWorld.IsServerSide)
                 return;
 
+            if (_state != GS.MatchOver)
+            {
+                var players = gameWorld.GetEntities<PlayerEntity>();
+                foreach (var player in players)
+                {
+                    if (!player || player.CurrentHealth <= 0f)
+                        continue;
+
+                    if (player.transform.position.y < killBelowY && player is IHealth health)
+                    {
+                        if (FeedSystem.Instance != null)
+                        {
+                            var gamePlayer = player.GamePlayer;
+                            var name = gamePlayer?.Name ?? "Unknown";
+                            var color = FeedSystem.GetPlayerColor(gamePlayer);
+                            var label = $"<color={color}>{name}</color>";
+                            FeedSystem.Instance.Server_AddFeedInfoLocalized("feed.fell_out_of_world", 3f, FeedMessageType.Kill, label);
+                        }
+                        health.Server_TakeDamage(player.CurrentHealth);
+                    }
+                }
+            }
+
             if (_phaseTimerRunning && _phaseTimerRemainingSeconds > 0f)
             {
                 _phaseTimerRemainingSeconds = Mathf.Max(0f, _phaseTimerRemainingSeconds - deltaTime);
@@ -625,6 +653,25 @@ namespace TUA.GameModes
                 if (!pe || !pe.gameObject)
                     return;
 
+                var hackerToolId = _GetHackerToolItemId();
+                if (!string.IsNullOrWhiteSpace(hackerToolId) && pe.Inventory?.slots != null)
+                {
+                    var inventory = pe.Inventory;
+                    var newInventory = inventory.Copy();
+                    var changed = false;
+                    for (var i = 0; i < newInventory.slots.Length; i++)
+                    {
+                        if (newInventory.slots[i] is not DataDriveItemStack)
+                            continue;
+
+                        newInventory.slots[i] = new ItemStack { item = hackerToolId };
+                        changed = true;
+                    }
+
+                    if (changed)
+                        pe.Server_SetInventory(newInventory);
+                }
+
                 var deadEntityUuid = pe.EntityUuid;
                 foreach (var spectatorPlayer in gameWorld.AllPlayers)
                 {
@@ -643,6 +690,23 @@ namespace TUA.GameModes
                 if (_state != GS.MatchOver)
                     StartCoroutine(RespawnPlayerAfterDelay(player, gameWorld, 3f));
             };
+        }
+
+        private string _GetHackerToolItemId()
+        {
+            if (defaultItems != null)
+            {
+                foreach (var item in defaultItems)
+                {
+                    if (item is HackerToolItem)
+                        return item.Id;
+                }
+            }
+
+            if (DeliverySystem.Instance != null && DeliverySystem.Instance.hackerToolItem)
+                return DeliverySystem.Instance.hackerToolItem.Id;
+
+            return null;
         }
 
         private static void _KillAllPlayers(GameWorld gameWorld)

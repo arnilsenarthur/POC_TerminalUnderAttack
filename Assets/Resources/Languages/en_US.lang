@@ -4,6 +4,7 @@ name=English
 feed.killed={0} killed {1}
 feed.hacked={0} hacked {1}
 feed.delivered_disk={0} delivered {1} disk
+feed.fell_out_of_world={0} fell out of the world
 
 # HUD / Match
 hud.match.warmup=Warmup

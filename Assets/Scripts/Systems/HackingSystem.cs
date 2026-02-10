@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TUA.Core;
+using TUA.Core.Interfaces;
 using TUA.Entities;
 using TUA.Items;
 using TUA.Misc;
@@ -61,7 +62,21 @@ namespace TUA.Systems
                     continue;
                 
                 if (target.IsHacked)
+                {
+                    if (target.IsDelivered)
+                        continue;
+
+                    var playersLookingAtHackedTarget = _GetPlayersLookingAtTarget(target);
+                    var shouldGrantDisk = playersLookingAtHackedTarget.Count > 0 && !_IsAnyInventoryHoldingDiskForTarget(target.EntityUuid);
+                    if (shouldGrantDisk)
+                        _GrantDiskToFirstPlayer(target, playersLookingAtHackedTarget);
+
+                    var isBeingHackedWhileHacked = playersLookingAtHackedTarget.Count > 0;
+                    if (target.IsBeingHacked != isBeingHackedWhileHacked)
+                        target.Server_SetIsBeingHacked(isBeingHackedWhileHacked);
+
                     continue;
+                }
                 
                 var playersLookingAtTarget = _GetPlayersLookingAtTarget(target);
                 var isBeingHacked = playersLookingAtTarget.Count > 0 && !target.IsHacked;
@@ -94,6 +109,52 @@ namespace TUA.Systems
                     target.Server_SetHackingProgress(newProgress);
                 }
             }
+        }
+
+        private static bool _IsAnyInventoryHoldingDiskForTarget(Uuid targetUuid)
+        {
+            if (!GameWorld.Instance || !targetUuid.IsValid)
+                return false;
+
+            foreach (var entity in GameWorld.Instance.GetEntities<Entity>())
+            {
+                if (!entity)
+                    continue;
+
+                if (entity is not IInventoryHolder holder)
+                    continue;
+
+                var inventory = holder.Inventory;
+                if (inventory?.slots == null)
+                    continue;
+
+                foreach (var stack in inventory.slots)
+                {
+                    if (stack is not DataDriveItemStack disk)
+                        continue;
+
+                    if (disk.targetUuid == targetUuid)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void _GrantDiskToFirstPlayer(HackingTarget target, List<PlayerHackingData> players)
+        {
+            if (target == null || players == null || players.Count == 0)
+                return;
+
+            var playerData = players[0];
+            if (!playerData.PlayerEntityUuid.IsValid)
+                return;
+
+            var playerEntity = GameWorld.Instance.GetEntityByUuid<PlayerEntity>(playerData.PlayerEntityUuid);
+            if (!playerEntity)
+                return;
+
+            _ReplaceHackerToolWithDataDrive(playerEntity, target);
         }
         
         private HackingTarget _GetCurrentHackingTarget()
