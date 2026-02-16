@@ -364,7 +364,7 @@ MonoBehaviour:
   - {fileID: 933305827}
   guardsSpawnPoints:
   - {fileID: 1697858983}
-  matchDurationSeconds: 30
+  matchDurationSeconds: 120
   useRounds: 0
   totalRounds: 5
   warmupSeconds: 5
